@@ -526,10 +526,20 @@ function runAnalysis() {
         }
     }
 
+   // --- RENDER TABLE ROWS ---
+    let totalHC = 0;
+    let totalSupply = 0;
+    let totalAdjCount = 0;
+
     rowArray.forEach((row, index) => {
         const hrsVal = parseFloat(row.querySelector('.roster-hrs-val').value) || 0;
         const hcVal = parseFloat(row.querySelector('.roster-hc-val').value) || 0;
         const blockSupply = (hrsVal * hcVal) * (1 - forfeit);
+        
+        // Accumulate totals
+        totalHC += hcVal;
+        totalSupply += blockSupply;
+        totalAdjCount += adjustments[index];
 
         let adjText = "";
         let adjColor = "text-slate-400";
@@ -544,12 +554,27 @@ function runAnalysis() {
 
         tableBody.innerHTML += `
             <tr class="hover:bg-slate-50 border-b">
-                <td class="px-10 py-5 font-black italic uppercase text-slate-700">Sequence Block ${index + 1} (${hrsVal} HRS)</td>
-                <td class="px-10 py-5 text-center text-xs font-black uppercase text-slate-500">${hcVal} CWs</td>
-                <td class="px-10 py-5 text-center font-mono font-black text-blue-600 uppercase">${blockSupply.toFixed(1)} HRS</td>
+                <td class="px-10 py-5 font-black italic uppercase text-slate-700">Demand Block ${index + 1} (${hrsVal} HRS)</td>
+                <td class="px-10 py-5 text-center text-xs font-black uppercase text-slate-500">${hcVal}</td>
+                <td class="px-10 py-5 text-center font-mono font-black text-blue-600 uppercase">${blockSupply.toFixed(1)}</td>
                 <td class="px-10 py-5 text-right px-10 ${adjColor}">${adjText}</td>
             </tr>`;
     });
+
+    // --- ADD FOOTER (Matches Header Format) ---
+    const finalAdjText = isDeficit ? `ADD ${totalAdjCount} CW(s)` : `SURPLUS ${totalAdjCount} CW(s)`;
+    const finalAdjColor = isDeficit ? "text-red-500" : "text-blue-600";
+
+    tableBody.innerHTML += `
+        <tfoot class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-t-2 border-slate-200 bg-slate-50/50">
+            <tr>
+                <td class="px-10 py-4 italic text-slate-900">Global Roster Totals</td>
+                <td class="px-10 py-4 text-center text-slate-700">${totalHC} CWs</td>
+                <td class="px-10 py-4 text-center font-mono text-blue-600">${totalSupply.toFixed(1)} HRS</td>
+                <td class="px-10 py-4 text-right ${finalAdjColor} underline">${totalAdjCount === 0 ? 'STABLE' : finalAdjText}</td>
+            </tr>
+        </tfoot>
+    `;
 
     // --- STRATEGIC NOTES ---
     tableBody.innerHTML += `
