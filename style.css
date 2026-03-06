@@ -1,71 +1,135 @@
-.accordion-content { 
-    max-height: 0; 
-    overflow: hidden; 
-    transition: max-height 0.4s ease-in-out; 
-    opacity: 0; 
+/* Import Inter for readability and JetBrains Mono for clean data/numbers */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.02em; /* Modern tight tracking */
+  background-color: #f8fafc;
 }
-.accordion-content.open { 
-    max-height: 4000px; 
-    opacity: 1; 
+
+h1, h2, h3, h4, .font-black {
+  font-weight: 900;
+  letter-spacing: -0.04em; /* Extra tight for headings */
 }
-.rotate-180 { transform: rotate(180deg); }
-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-.input-pill { 
-    border: 1px solid #e2e8f0; 
-    border-radius: 12px; 
-    transition: all 0.2s; 
-    font-weight: 800; 
-    text-align: center; 
-    outline: none; 
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace !important;
+  letter-spacing: -0.05em;
 }
-.input-pill:focus { 
-    border-color: #3b82f6; 
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
-    background: #f8fafc; 
+
+/* Cleaner Input Styles */
+input[type="number"], input[type="text"] {
+  transition: all 0.2s ease;
+  border-color: #e2e8f0;
 }
-.pulse-red { animation: pulse 2s infinite; }
-@keyframes pulse { 
-    0%, 100% { color: #ef4444; } 
-    50% { color: #b91c1c; opacity: 0.8; } 
+
+input[type="number"]:focus, input[type="text"]:focus {
+  border-color: #6366f1; /* Indigo focus */
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  background-color: #fff;
 }
-.input-edit { 
-    border-bottom: 2px solid transparent; 
-    transition: all 0.2s; 
-    cursor: text; 
-    font-weight: 800; 
+
+/* Label styling for the tracking-widest feel you like */
+label {
+  letter-spacing: 0.15em;
+  font-weight: 800;
 }
-.input-edit:focus { 
-    border-bottom-color: #3b82f6; 
-    outline: none; 
-    background: #f8fafc; 
+
+.accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-in-out;
+    opacity: 0;
 }
-.btn-toggle { 
-    padding: 4px 10px; 
-    border-radius: 8px; 
-    font-size: 10px; 
-    font-weight: 900; 
-    transition: all 0.2s; 
-    border: 1px solid #e2e8f0; 
-    background: white; 
-    color: #94a3b8; 
+
+.accordion-content.open {
+    max-height: 4000px;
+    opacity: 1;
 }
-.btn-toggle.active { 
-    background: #3b82f6; 
-    color: white; 
-    border-color: #3b82f6; 
+
+.rotate-180 {
+    transform: rotate(180deg);
 }
-.tab-btn { 
-    padding: 12px 20px; 
-    font-size: 10px; 
-    font-weight: 900; 
-    color: #64748b; 
-    border-bottom: 2px solid transparent; 
-    transition: all 0.2s; 
-    text-transform: uppercase; 
-    letter-spacing: 0.05em; 
+
+input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
 }
-.tab-btn.active { 
-    color: #3b82f6; 
-    border-bottom-color: #3b82f6; 
-    background: rgba(59, 130, 246, 0.03); 
+
+.input-pill {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    transition: all 0.2s;
+    font-weight: 800;
+    text-align: center;
+    outline: none;
+}
+
+.input-pill:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: #f8fafc;
+}
+
+.pulse-red {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        color: #ef4444;
+    }
+
+    50% {
+        color: #b91c1c;
+        opacity: 0.8;
+    }
+}
+
+.input-edit {
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    cursor: text;
+    font-weight: 800;
+}
+
+.input-edit:focus {
+    border-bottom-color: #3b82f6;
+    outline: none;
+    background: #f8fafc;
+}
+
+.btn-toggle {
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 900;
+    transition: all 0.2s;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #94a3b8;
+}
+
+.btn-toggle.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.tab-btn {
+    padding: 12px 20px;
+    font-size: 10px;
+    font-weight: 900;
+    color: #64748b;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tab-btn.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.03);
 }
