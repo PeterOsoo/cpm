@@ -595,24 +595,27 @@ function runAnalysis() {
         </tr>
     `;
 
-    // --- RESTORED BY USE CASE TAB (Unchanged) ---
-    // --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS ---
+   // --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS ---
+// --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS (VERTICAL STACK) ---
+    // --- UPDATED BY USE CASE TAB: VERTICAL STACKED VIEW ---
+    // --- UPDATED BY USE CASE TAB: VERTICAL STACKED DATA-HEAVY VIEW ---
+ // --- UPDATED BY USE CASE TAB: VERTICAL STACKED WITH SHIFT COLUMN ---
     const ucListCont = document.getElementById('uc-list-container');
-    const ucValidation = document.getElementById('ucValidation'); // Sidebar Paragraph Target
+    const ucValidation = document.getElementById('ucValidation');
 
     if (ucListCont) {
-        ucListCont.innerHTML = '';
         let xTotalDemandHrs = 0;
         let capableUCs = [];
         let unableUCs = [];
         let runningSupply = netGlobalSupplyHrs;
+        let rowsHtml = '';
+        
         const ucRows = document.querySelectorAll('.uc-row');
 
-        let cardsHtml = '';
         ucRows.forEach((row) => {
             const name = row.querySelector('.uc-name-input').value;
             const val = parseFloat(row.querySelector('.uc-vol-input').value) || 0;
-            const shiftHrs = parseFloat(row.querySelector('.uc-shift-input').value) || 8;
+            const shiftLen = parseFloat(row.querySelector('.uc-shift-input').value) || 8;
             const buf = parseFloat(row.querySelector('.uc-buf-input').value) || 0;
 
             let streamHrs = 0;
@@ -624,76 +627,110 @@ function runAnalysis() {
                 streamHrs = val * (1 + (buf / 100));
             }
 
-            const peopleNeeded = streamHrs / shiftHrs;
+            // MATH: HC = Hours / Shift Length
+            let bCWs = Math.ceil(streamHrs / (shiftLen || 8));
             xTotalDemandHrs += streamHrs;
 
-            if (runningSupply >= streamHrs) {
+            const isCapable = runningSupply >= streamHrs;
+            if (isCapable) {
                 capableUCs.push(name);
                 runningSupply -= streamHrs;
             } else {
                 unableUCs.push(name);
             }
 
-            cardsHtml += `
-                <div class="p-6 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm flex justify-between items-center">
-                    <div>
-                        <h5 class="text-xs font-black italic uppercase text-blue-600">${name}</h5>
-                        <div class="flex gap-4 mt-1">
-                            <p class="text-[9px] text-slate-400 font-black uppercase italic tracking-tighter">Demand: <span class="text-slate-900">${streamHrs.toFixed(1)} HRS</span></p>
-                            <p class="text-[9px] text-slate-400 font-black uppercase italic tracking-tighter border-l pl-4">Shift: <span class="text-slate-900">${shiftHrs} HR</span></p>
+            // TABLE ROW: 4 Columns (Name, Hours, Shift, Headcount)
+            rowsHtml += `
+                <tr class="hover:bg-slate-50 border-b">
+                    <td class="px-10 py-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full ${isCapable ? 'bg-emerald-500' : 'bg-red-500'}"></div>
+                            <span class="font-black italic uppercase text-purple-600 tracking-tight">${name}</span>
                         </div>
-                    </div>
-                    <div class="bg-blue-50 px-3 py-1 rounded-xl text-[10px] font-black text-blue-600 uppercase font-mono">
-                        ${peopleNeeded.toFixed(1)} CWs
-                    </div>
-                </div>`;
+                    </td>
+                    <td class="px-10 py-6 text-center font-mono font-black ${isCapable ? 'text-slate-700' : 'text-red-500'}">
+                        ${streamHrs.toFixed(1)} 
+                    </td>
+                    <td class="px-10 py-6 text-center font-mono font-black text-slate-500 uppercase italic text-xs">
+                        ${shiftLen}
+                    <td class="px-10 py-6 text-right font-mono font-black text-blue-600">
+                        ${bCWs} 
+                    </td>
+                </tr>`;
         });
 
         const diff = netGlobalSupplyHrs - xTotalDemandHrs;
         const isDeficit = diff < 0;
 
-        // --- SIDEBAR PARAGRAPH (The one you asked for) ---
+        // Sidebar Sync
         if (ucValidation) {
             ucValidation.innerHTML = `
                 <div class="space-y-2 w-full text-left">
                     <p class="text-[10px] font-medium leading-relaxed lowercase text-slate-500 first-letter:uppercase tracking-tight">
-                        Total hours needed is <span class="font-black text-slate-900 font-mono">${xTotalDemandHrs.toFixed(1)} hours</span>. 
-                        Shift availability has <span class="font-black text-blue-600 font-mono">${netGlobalSupplyHrs.toFixed(1)} hrs</span>.
+                        Demand (Y): <span class="font-black text-slate-900">${xTotalDemandHrs.toFixed(1)}h</span> | 
+                        Supply (X): <span class="font-black text-blue-600">${netGlobalSupplyHrs.toFixed(1)}h</span>
                     </p>
                     <div class="pt-2 border-t border-slate-100">
                         <p class="text-[9px] font-black uppercase italic tracking-wider ${isDeficit ? 'text-red-500' : 'text-emerald-600'}">
-                            ${isDeficit
-                    ? `⚠️ Deficit: Short ${Math.abs(diff).toFixed(1)} hours`
-                    : `✅ Surplus: ${Math.abs(diff).toFixed(1)} extra hours`}
+                            ${isDeficit ? `⚠️ Deficit (Z): ${Math.abs(diff).toFixed(1)} hrs` : `✅ Surplus (Z): ${Math.abs(diff).toFixed(1)} hrs`}
                         </p>
                     </div>
-                </div>
-            `;
+                </div>`;
             ucValidation.className = `p-4 rounded-2xl border mt-4 transition-all duration-300 ${isDeficit ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`;
         }
 
-        // Render main tab view
+        // --- RENDER VERTICAL STACK ---
+        ucListCont.className = "col-span-full flex flex-col gap-6 w-full";
+        
         ucListCont.innerHTML = `
-            <div class="col-span-full p-8 bg-slate-900 rounded-[3rem] text-white mb-6 space-y-4 shadow-xl border border-slate-800">
-                <div class="flex items-center gap-3"><i data-lucide="users" class="w-5 h-5 text-blue-400"></i><h4 class="text-[10px] font-black tracking-[0.2em] uppercase text-slate-400">Requirement Breakdown</h4></div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="space-y-2">
-                        <p class="text-[11px] font-black uppercase text-slate-300">Total Hours Needed: <span class="text-white">${xTotalDemandHrs.toFixed(1)} HRS</span></p>
-                        <p class="text-[11px] font-black uppercase text-slate-300">Net Global Supply: <span class="text-blue-400">${netGlobalSupplyHrs.toFixed(1)} HRS</span></p>
-                        <p class="text-[11px] font-black uppercase ${isDeficit ? 'text-red-400' : 'text-emerald-400'}">Balance: ${Math.abs(diff).toFixed(1)} HR ${!isDeficit ? 'Surplus' : 'Deficit'}</p>
+            <div class="w-full p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="space-y-1">
+                        <div class="text-[10px] font-black text-slate-400 italic uppercase tracking-widest leading-relaxed">Availability Hours (X)</div>
+                        <div class="text-3xl font-black italic tracking-tighter text-blue-600 font-mono">${netGlobalSupplyHrs.toFixed(1)}<span class="text-sm ml-1 text-slate-400">HRS</span></div>
+                        <p class="text-[9px] text-slate-400 font-medium leading-tight lowercase first-letter:uppercase">Total capacity provided by defined shifts.</p>
                     </div>
-                    <div class="bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
-                        <p class="text-[10px] font-black text-slate-200 uppercase mb-2">Capable:</p>
-                        <p class="text-[10px] font-black text-slate-400 italic">${capableUCs.join(', ') || 'None'}</p>
-                        ${unableUCs.length > 0 ? `<p class="text-[10px] font-black text-red-400 uppercase mt-2 mb-1">Unable:</p><p class="text-[10px] font-black text-slate-500 line-through">${unableUCs.join(', ')}</p>` : ''}
+                    <div class="space-y-1">
+                        <div class="text-[10px] font-black text-slate-400 italic uppercase tracking-widest leading-relaxed">Needed Hours (Y)</div>
+                        <div class="text-3xl font-black italic tracking-tighter text-slate-900 font-mono">${xTotalDemandHrs.toFixed(1)}<span class="text-sm ml-1 text-slate-400">HRS</span></div>
+                        <p class="text-[9px] text-slate-400 font-medium leading-tight lowercase first-letter:uppercase">Total workstream requirements (Sum of all samples).</p>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="text-[10px] font-black text-slate-400 italic uppercase tracking-widest leading-relaxed">${isDeficit ? 'Hours Deficit (Z)' : 'Hours Surplus (Z)'}</div>
+                        <div class="text-3xl font-black italic tracking-tighter ${isDeficit ? 'text-red-500' : 'text-emerald-500'} font-mono">${Math.abs(diff).toFixed(1)}<span class="text-sm ml-1 text-slate-400">HRS</span></div>
+                        <p class="text-[9px] text-slate-400 font-medium leading-tight lowercase first-letter:uppercase">${isDeficit ? 'Resources are insufficient for total demand.' : 'Capacity exceeds total requirement.'}</p>
                     </div>
                 </div>
             </div>
-            <div class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4">${cardsHtml}</div>
+
+            <div class="w-full bg-white rounded-[3.5rem] border border-slate-100 shadow-sm overflow-hidden mb-12">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b bg-slate-50/50">
+                            <th class="px-10 py-5 italic">Workstream Name</th>
+                            <th class="text-center italic">Hours Needed</th>
+                            <th class="text-center italic"> Hours per CW</th>
+                            <th class="text-right px-10 italic">Headcount (CW)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        ${rowsHtml}
+                    </tbody>
+                    <tfoot class="text-[14px] font-black text-slate-500 uppercase tracking-tight border-t-2 border-slate-200 bg-slate-50/80">
+                        <tr>
+                            <td class="px-10 py-6 italic text-slate-900 font-black uppercase">Cumulative Analysis Total (Y)</td>
+                            <td class="text-center font-mono text-slate-800">${xTotalDemandHrs.toFixed(1)} HRS</td>
+                            <td class="text-center italic text-slate-400 text-xs uppercase">— MAx —</td>
+                            <td class="text-right px-10 font-mono text-blue-700 text-xl">
+                                ${capableUCs.length} / ${ucRows.length} <span class="text-[11px] tracking-widest text-slate-400 ml-1 uppercase">Ready</span>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
         `;
         lucide.createIcons();
-    }
-    // --- UPDATED BLOCK DIST TAB: DYNAMIC COLUMNS & CLEAN FORMAT ---
+    }   // --- UPDATED BLOCK DIST TAB: DYNAMIC COLUMNS & CLEAN FORMAT ---
     // --- UPDATED BLOCK DIST TAB: ADDED TOTALS & DYNAMIC SUMMARY ---
     const blockCont = document.getElementById('view-blocks');
     if (blockCont) {
