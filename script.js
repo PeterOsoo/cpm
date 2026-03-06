@@ -323,7 +323,7 @@ function renderShifts() {
         <div class="grid grid-cols-12 gap-1 px-2 text-[7px] font-black text-slate-400 uppercase italic text-center mb-1">
             <div class="col-span-3 text-left">Shift Name</div>
             <div class="col-span-4 text-purple-600">${columnLabel}</div>
-            <div class="col-span-2 text-blue-500">Hrs/CW</div>
+            <div class="col-span-2 text-blue-500">Hrs per CW</div>
             <div class="col-span-3 text-emerald-500">Buf %</div>
         </div>
     `;
@@ -572,10 +572,12 @@ function runAnalysis() {
 
     // --- RESTORED BY USE CASE TAB (Unchanged) ---
     // --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS ---
-   const ucListCont = document.getElementById('uc-list-container');
+    const ucListCont = document.getElementById('uc-list-container');
+    const ucValidation = document.getElementById('ucValidation'); // Sidebar Paragraph Target
+    
     if (ucListCont) {
         ucListCont.innerHTML = '';
-        let totalLoadNeeded = 0;
+        let xTotalDemandHrs = 0;
         let capableUCs = [];
         let unableUCs = [];
         let runningSupply = netGlobalSupplyHrs;
@@ -598,7 +600,7 @@ function runAnalysis() {
             }
             
             const peopleNeeded = streamHrs / shiftHrs;
-            totalLoadNeeded += streamHrs;
+            xTotalDemandHrs += streamHrs;
 
             if (runningSupply >= streamHrs) {
                 capableUCs.push(name);
@@ -612,27 +614,48 @@ function runAnalysis() {
                     <div>
                         <h5 class="text-xs font-black italic uppercase text-blue-600">${name}</h5>
                         <div class="flex gap-4 mt-1">
-                            <p class="text-[9px] text-slate-400 font-black uppercase italic tracking-tighter">Demand Hours: <span class="text-slate-900">${streamHrs.toFixed(1)} HRS</span></p>
+                            <p class="text-[9px] text-slate-400 font-black uppercase italic tracking-tighter">Demand: <span class="text-slate-900">${streamHrs.toFixed(1)} HRS</span></p>
                             <p class="text-[9px] text-slate-400 font-black uppercase italic tracking-tighter border-l pl-4">Shift: <span class="text-slate-900">${shiftHrs} HR</span></p>
                         </div>
                     </div>
-                    <div class="bg-blue-50 px-3 py-1 rounded-xl text-[10px] font-black text-blue-600 uppercase">
+                    <div class="bg-blue-50 px-3 py-1 rounded-xl text-[10px] font-black text-blue-600 uppercase font-mono">
                         ${peopleNeeded.toFixed(1)} CWs
                     </div>
                 </div>`;
         });
 
-        const diff = netGlobalSupplyHrs - totalLoadNeeded;
-        const statusColor = diff >= 0 ? 'text-emerald-400' : 'text-red-400';
+        const diff = netGlobalSupplyHrs - xTotalDemandHrs;
+        const isDeficit = diff < 0;
 
+        // --- SIDEBAR PARAGRAPH (The one you asked for) ---
+        if (ucValidation) {
+            ucValidation.innerHTML = `
+                <div class="space-y-2 w-full text-left">
+                    <p class="text-[10px] font-medium leading-relaxed lowercase text-slate-500 first-letter:uppercase tracking-tight">
+                        Total hours needed is <span class="font-black text-slate-900 font-mono">${xTotalDemandHrs.toFixed(1)} hours</span>. 
+                        Shift availability has <span class="font-black text-blue-600 font-mono">${netGlobalSupplyHrs.toFixed(1)} hrs</span>.
+                    </p>
+                    <div class="pt-2 border-t border-slate-100">
+                        <p class="text-[9px] font-black uppercase italic tracking-wider ${isDeficit ? 'text-red-500' : 'text-emerald-600'}">
+                            ${isDeficit 
+                                ? `⚠️ Deficit: Short ${Math.abs(diff).toFixed(1)} hours` 
+                                : `✅ Surplus: ${Math.abs(diff).toFixed(1)} extra hours`}
+                        </p>
+                    </div>
+                </div>
+            `;
+            ucValidation.className = `p-4 rounded-2xl border mt-4 transition-all duration-300 ${isDeficit ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`;
+        }
+
+        // Render main tab view
         ucListCont.innerHTML = `
             <div class="col-span-full p-8 bg-slate-900 rounded-[3rem] text-white mb-6 space-y-4 shadow-xl border border-slate-800">
                 <div class="flex items-center gap-3"><i data-lucide="users" class="w-5 h-5 text-blue-400"></i><h4 class="text-[10px] font-black tracking-[0.2em] uppercase text-slate-400">Requirement Breakdown</h4></div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="space-y-2">
-                        <p class="text-[11px] font-black uppercase text-slate-300">Total Hours Needed: <span class="text-white">${totalLoadNeeded.toFixed(1)} HRS</span></p>
+                        <p class="text-[11px] font-black uppercase text-slate-300">Total Hours Needed: <span class="text-white">${xTotalDemandHrs.toFixed(1)} HRS</span></p>
                         <p class="text-[11px] font-black uppercase text-slate-300">Net Global Supply: <span class="text-blue-400">${netGlobalSupplyHrs.toFixed(1)} HRS</span></p>
-                        <p class="text-[11px] font-black uppercase ${statusColor}">Balance: ${Math.abs(diff).toFixed(1)} HR ${diff >= 0 ? 'Surplus' : 'Deficit'}</p>
+                        <p class="text-[11px] font-black uppercase ${isDeficit ? 'text-red-400' : 'text-emerald-400'}">Balance: ${Math.abs(diff).toFixed(1)} HR ${!isDeficit ? 'Surplus' : 'Deficit'}</p>
                     </div>
                     <div class="bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
                         <p class="text-[10px] font-black text-slate-200 uppercase mb-2">Capable:</p>
@@ -645,7 +668,6 @@ function runAnalysis() {
         `;
         lucide.createIcons();
     }
-
    // --- UPDATED BLOCK DIST TAB: DYNAMIC COLUMNS & CLEAN FORMAT ---
   // --- UPDATED BLOCK DIST TAB: DYNAMIC SHIFT LENGTH & TPT LINE ---
     const blockCont = document.getElementById('view-blocks');
@@ -660,17 +682,24 @@ function runAnalysis() {
         shiftRows.forEach((row) => {
             const name = row.querySelector('.shift-name-input').value;
             const val = parseFloat(row.querySelector('.shift-input').value) || 0;
-            const shiftLen = parseFloat(row.querySelector('.shift-len-input').value) || 8; // NEW INPUT
+            
+            // --- THE FIX: Grab the specific Hrs/CW from the sidebar row ---
+            const shiftLen = parseFloat(row.querySelector('.shift-len-input').value) || 8; 
             const bufferVal = parseFloat(row.querySelector('.shift-buffer-input').value) || 0;
             
-            let bVol = (state.shiftMode === 'percent') ? (dailyInput * (val / 100)) : val;
-            let bHrs = isHoursMode ? bVol : (bVol / tpt);
+            // 1. Calculate Base (if % of daily target or raw number)
+            let bBasis = (state.shiftMode === 'percent') ? (dailyInput * (val / 100)) : val;
+            
+            // 2. Convert to Hours: If Volume mode, divide by TPT. If Hours mode, it is already hours.
+            let bHrs = isHoursMode ? bBasis : (bBasis / tpt);
+            
+            // 3. Apply the Buffer %
             let finalHrs = bHrs * (1 + (bufferVal / 100));
             
-            // MATH UPDATE: Divide by specific shift length input
-            let bCWs = finalHrs / shiftLen;
+            // 4. Calculate Headcount: Divide Final Hours by the specific Shift Length (Hrs/CW)
+            let bCWs = finalHrs / (shiftLen || 8); 
 
-            totalVol += bVol;
+            totalVol += (isHoursMode ? 0 : bBasis); // Only track tasks if in volume mode
             totalHrs += finalHrs;
             totalCW += bCWs;
 
@@ -732,7 +761,7 @@ function runAnalysis() {
             </div>
         `;
     }
-    
+
     // --- SCOREBOARD ---
     document.getElementById('scoreboard').innerHTML = [
         { label: 'Daily Demand', val: baseDailyHrs.toFixed(1) + ' HRS' },
