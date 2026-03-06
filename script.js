@@ -305,7 +305,6 @@ function renderShifts() {
     const cont = document.getElementById('shiftStratContainer');
     const target = parseFloat(document.getElementById('dailyInput').value) || 0;
     
-    // Update the Toggle Buttons labels dynamically
     const nBtn = document.getElementById('sModeNum');
     const pBtn = document.getElementById('sModePerc');
     
@@ -317,34 +316,32 @@ function renderShifts() {
         pBtn.innerText = "Percent %";
     }
 
-    // Determine the Column Header Label
-    let columnLabel = "";
-    if (state.shiftMode === 'percent') {
-        columnLabel = "Percent %";
-    } else {
-        columnLabel = (state.mode === 'hours') ? "Confirmed Hours" : "Volume / Num";
-    }
+    let columnLabel = (state.shiftMode === 'percent') ? "Percent %" : (state.mode === 'hours' ? "Confirmed Hours" : "Volume / Num");
 
+    // NEW GRID: Added a column for Hrs/CW
     cont.innerHTML = `
-        <div class="grid grid-cols-12 gap-2 px-2 text-[8px] font-black text-slate-400 uppercase italic text-center mb-1">
-            <div class="col-span-4 text-left">Shift Name</div>
-            <div class="col-span-5 text-purple-600 underline">${columnLabel}</div>
-            <div class="col-span-3">Buffer %</div>
+        <div class="grid grid-cols-12 gap-1 px-2 text-[7px] font-black text-slate-400 uppercase italic text-center mb-1">
+            <div class="col-span-3 text-left">Shift Name</div>
+            <div class="col-span-4 text-purple-600">${columnLabel}</div>
+            <div class="col-span-2 text-blue-500">Hrs/CW</div>
+            <div class="col-span-3 text-emerald-500">Buf %</div>
         </div>
     `;
     
-    // Distribution logic to prevent "quack" values
     const distValue = (state.shiftMode === 'percent') ? (100 / count).toFixed(1) : (target / count).toFixed(1);
     
     for (let i = 0; i < count; i++) {
         const div = document.createElement('div');
-        div.className = "shift-row grid grid-cols-12 items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-100 mb-2";
+        div.className = "shift-row grid grid-cols-12 items-center gap-1 p-2 bg-slate-50 rounded-xl border border-slate-100 mb-2";
         div.innerHTML = `
-            <div class="col-span-4">
-                <input type="text" value="Shift ${i + 1}" oninput="runAnalysis()" class="shift-name-input text-[9px] font-black text-purple-600 uppercase w-full bg-transparent outline-none italic input-edit px-1">
+            <div class="col-span-3">
+                <input type="text" value="Shift ${i + 1}" oninput="runAnalysis()" class="shift-name-input text-[9px] font-black text-purple-600 uppercase w-full bg-transparent outline-none italic px-1">
             </div>
-            <div class="col-span-5">
+            <div class="col-span-4">
                 <input type="number" value="${distValue}" oninput="validateShifts()" class="shift-input w-full bg-white p-1 text-xs font-black border rounded-lg outline-none text-center shadow-sm">
+            </div>
+            <div class="col-span-2">
+                <input type="number" value="8" oninput="runAnalysis()" class="shift-len-input w-full bg-blue-50 p-1 text-xs font-black border border-blue-100 text-blue-600 rounded-lg outline-none text-center shadow-sm">
             </div>
             <div class="col-span-3">
                 <input type="number" value="10" oninput="runAnalysis()" class="shift-buffer-input w-full bg-white p-1 text-xs font-black border border-emerald-100 text-emerald-600 rounded-lg outline-none text-center shadow-sm">
@@ -650,7 +647,7 @@ function runAnalysis() {
     }
 
    // --- UPDATED BLOCK DIST TAB: DYNAMIC COLUMNS & CLEAN FORMAT ---
-   // --- UPDATED BLOCK DIST TAB: ADDED TPT CALC LINE ---
+  // --- UPDATED BLOCK DIST TAB: DYNAMIC SHIFT LENGTH & TPT LINE ---
     const blockCont = document.getElementById('view-blocks');
     if (blockCont) {
         let totalVol = 0;
@@ -663,12 +660,15 @@ function runAnalysis() {
         shiftRows.forEach((row) => {
             const name = row.querySelector('.shift-name-input').value;
             const val = parseFloat(row.querySelector('.shift-input').value) || 0;
+            const shiftLen = parseFloat(row.querySelector('.shift-len-input').value) || 8; // NEW INPUT
             const bufferVal = parseFloat(row.querySelector('.shift-buffer-input').value) || 0;
             
             let bVol = (state.shiftMode === 'percent') ? (dailyInput * (val / 100)) : val;
             let bHrs = isHoursMode ? bVol : (bVol / tpt);
             let finalHrs = bHrs * (1 + (bufferVal / 100));
-            let bCWs = finalHrs / 8;
+            
+            // MATH UPDATE: Divide by specific shift length input
+            let bCWs = finalHrs / shiftLen;
 
             totalVol += bVol;
             totalHrs += finalHrs;
@@ -691,9 +691,7 @@ function runAnalysis() {
         const availableCWs = (netGlobalSupplyHrs / 8).toFixed(1);
         const projectedCWs = totalCW.toFixed(1);
         const diffCWs = Math.abs(availableCWs - projectedCWs).toFixed(1);
-        const isDeficit = projectedCWs > availableCWs;
-
-        // NEW: Calculate the raw hours needed based on TPT (before buffer)
+        const isDeficit = parseFloat(projectedCWs) > parseFloat(availableCWs);
         const tptHrsNeeded = totalVol / tpt;
 
         blockCont.innerHTML = `
@@ -711,11 +709,11 @@ function runAnalysis() {
                     Net Available: ${netGlobalSupplyHrs.toFixed(1)} HRS
                 </div>
                 <div class="text-[10px] font-black text-blue-500 italic uppercase tracking-widest leading-relaxed">
-                    No. of CWs available FT: ${availableCWs} CWs (Derived from availability section)
+                    No. of CWs available FT (8h basis): ${availableCWs} CWs
                 </div>
                 <div class="text-[10px] font-black ${isDeficit ? 'text-red-500' : 'text-emerald-600'} uppercase italic tracking-widest pt-2 border-t border-slate-200 leading-relaxed mt-2">
-                    Gap Analysis: Based on your availability of ${availableCWs} FT CWs and a total projection of ${projectedCWs} CWs, 
-                    you have a ${isDeficit ? 'deficit and need ' + diffCWs + ' more' : 'surplus of ' + diffCWs} FT CWs to deliver.
+                    Gap Analysis: Based on your availability and a total strategy projection of ${projectedCWs} CWs, 
+                    you have a ${isDeficit ? 'deficit and need ' + diffCWs + ' more' : 'surplus of ' + diffCWs} workers to deliver.
                 </div>
             </div>
 
@@ -734,7 +732,7 @@ function runAnalysis() {
             </div>
         `;
     }
-
+    
     // --- SCOREBOARD ---
     document.getElementById('scoreboard').innerHTML = [
         { label: 'Daily Demand', val: baseDailyHrs.toFixed(1) + ' HRS' },
