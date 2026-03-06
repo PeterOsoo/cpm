@@ -201,34 +201,54 @@ function renderUCs() {
     const cont = document.getElementById('ucContainer');
     const target = parseFloat(document.getElementById('dailyInput').value) || 0;
 
-    // Updated button HTML with onclick events and dynamic active classes
-    cont.innerHTML = `
+    // Unit Switcher (Only for Volume Mode)
+    let unitHtml = state.mode === 'volume' ? `
         <div class="bg-blue-50/50 p-2 rounded-xl border border-blue-100 mb-3 flex justify-between items-center px-4">
-            <span class="text-[8px] font-black text-blue-400 uppercase italic">Global AHT Unit:</span>
+            <span class="text-[8px] font-black text-blue-400 uppercase italic">AHT Unit:</span>
             <div class="flex bg-white rounded-lg p-0.5 border shadow-sm">
-                <button onclick="setAHTUnit('sec')" class="px-3 py-1 text-[8px] font-black rounded-md ${state.globalAHTUnit === 'sec' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400'}">SEC</button>
-                <button onclick="setAHTUnit('min')" class="px-3 py-1 text-[8px] font-black rounded-md ${state.globalAHTUnit === 'min' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400'}">MIN</button>
-                <button onclick="setAHTUnit('hr')" class="px-3 py-1 text-[8px] font-black rounded-md ${state.globalAHTUnit === 'hr' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400'}">HRS</button>
+                <button onclick="setAHTUnit('sec')" class="px-3 py-1 text-[8px] font-black rounded-md ${state.globalAHTUnit === 'sec' ? 'bg-blue-600 text-white' : 'text-slate-400'}">SEC</button>
+                <button onclick="setAHTUnit('min')" class="px-3 py-1 text-[8px] font-black rounded-md ${state.globalAHTUnit === 'min' ? 'bg-blue-600 text-white' : 'text-slate-400'}">MIN</button>
+                <button onclick="setAHTUnit('hr')" class="px-3 py-1 text-[8px] font-black rounded-md ${state.globalAHTUnit === 'hr' ? 'bg-blue-600 text-white' : 'text-slate-400'}">HRS</button>
             </div>
-        </div>
-    `;
+        </div>` : '';
 
+    let html = unitHtml;
     const dist = distributeInteger(target, count);
+
     for (let i = 0; i < count; i++) {
-        const div = document.createElement('div');
-        div.className = "uc-row p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 mb-2";
-        div.innerHTML = `
-            <input type="text" value="Use Case ${i + 1}" oninput="runAnalysis()" class="uc-name-input w-full bg-transparent text-[10px] font-black text-blue-600 uppercase italic outline-none input-edit px-1">
-            <div class="grid grid-cols-3 gap-2">
-                <input type="number" value="${dist[i]}" oninput="runAnalysis()" class="uc-vol-input p-2 text-[11px] font-black border rounded-xl outline-none text-center bg-white shadow-sm">
-                <input type="number" value="120" oninput="runAnalysis()" class="uc-aht-input p-2 text-[11px] font-black border rounded-xl outline-none text-center bg-white shadow-sm" placeholder="AHT (${state.globalAHTUnit})">
-                <input type="number" value="10" oninput="runAnalysis()" class="uc-buf-input p-2 text-[11px] font-black border rounded-xl outline-none text-center bg-white shadow-sm">
+        // Grid changes from grid-cols-4 to grid-cols-3
+        const gridCols = state.mode === 'volume' ? 'grid-cols-4' : 'grid-cols-3';
+        
+        html += `
+            <div class="uc-row p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 mb-2">
+                <input type="text" value="Use Case ${i + 1}" oninput="runAnalysis()" class="uc-name-input w-full bg-transparent text-[10px] font-black text-blue-600 uppercase italic outline-none input-edit px-1">
+                <div class="grid ${gridCols} gap-2">
+                    <div class="space-y-1">
+                        <label class="text-[7px] font-black text-slate-400 uppercase ml-1">${state.mode === 'volume' ? 'Vol' : 'Raw Hrs'}</label>
+                        <input type="number" value="${dist[i]}" oninput="runAnalysis()" class="uc-vol-input p-2 text-[11px] font-black border rounded-xl outline-none text-center bg-white shadow-sm w-full">
+                    </div>
+                    
+                    ${state.mode === 'volume' ? `
+                    <div class="space-y-1">
+                        <label class="text-[7px] font-black text-slate-400 uppercase ml-1">Avg AHT</label>
+                        <input type="number" value="120" oninput="runAnalysis()" class="uc-aht-input p-2 text-[11px] font-black border rounded-xl outline-none text-center bg-white shadow-sm w-full">
+                    </div>` : ''}
+
+                    <div class="space-y-1">
+                        <label class="text-[7px] font-black text-slate-400 uppercase ml-1">Hrs/CW</label>
+                        <input type="number" value="8" oninput="runAnalysis()" class="uc-shift-input p-2 text-[11px] font-black border border-blue-100 text-blue-600 rounded-xl outline-none text-center bg-white shadow-sm w-full">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[7px] font-black text-slate-400 uppercase ml-1">Buf %</label>
+                        <input type="number" value="10" oninput="runAnalysis()" class="uc-buf-input p-2 text-[11px] font-black border rounded-xl outline-none text-center bg-white shadow-sm w-full">
+                    </div>
+                </div>
             </div>`;
-        cont.appendChild(div);
     }
+    cont.innerHTML = html;
     runAnalysis();
 }
-
 function setMode(m) {
     state.mode = m;
     document.getElementById('btn-vol').className = m === 'volume' ? 'flex-1 py-2 text-[10px] font-black rounded-xl transition-all bg-white text-blue-600 shadow-sm uppercase' : 'flex-1 py-2 text-[10px] font-black rounded-xl transition-all text-slate-500 uppercase';
@@ -474,18 +494,79 @@ function runAnalysis() {
     `;
 
     // --- RESTORED BY USE CASE TAB (Unchanged) ---
-    const ucListCont = document.getElementById('uc-list-container');
+    // --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS ---
+   const ucListCont = document.getElementById('uc-list-container');
     if (ucListCont) {
         ucListCont.innerHTML = '';
-        document.querySelectorAll('.uc-row').forEach((row) => {
+        let totalLoadNeeded = 0;
+        let capableUCs = [];
+        let unableUCs = [];
+        let runningSupply = netGlobalSupplyHrs;
+        const ucRows = document.querySelectorAll('.uc-row');
+
+        let cardsHtml = '';
+        ucRows.forEach((row) => {
             const name = row.querySelector('.uc-name-input').value;
-            const vol = parseFloat(row.querySelector('.uc-vol-input').value) || 0;
-            const aht = parseFloat(row.querySelector('.uc-aht-input').value) || 0;
+            const val = parseFloat(row.querySelector('.uc-vol-input').value) || 0;
+            const shiftHrs = parseFloat(row.querySelector('.uc-shift-input').value) || 8;
             const buf = parseFloat(row.querySelector('.uc-buf-input').value) || 0;
-            let mult = state.globalAHTUnit === 'min' ? 60 : (state.globalAHTUnit === 'hr' ? 3600 : 1);
-            let streamHrs = ((vol * (aht * mult)) / 3600) * (1 + (buf / 100));
-            ucListCont.innerHTML += `<div class="p-6 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm flex justify-between items-center"><div><h5 class="text-xs font-black italic uppercase text-blue-600">${name}</h5><p class="text-[9px] text-slate-400 font-black uppercase mt-1 italic">Load: <span class="text-slate-900">${streamHrs.toFixed(1)} HRS</span></p></div><div class="text-right"><div class="bg-blue-50 px-3 py-1 rounded-xl text-[10px] font-black text-blue-600 uppercase">${(streamHrs / 8).toFixed(1)} CWs</div></div></div>`;
+            
+            let streamHrs = 0;
+            if (state.mode === 'volume') {
+                const aht = parseFloat(row.querySelector('.uc-aht-input').value) || 0;
+                let mult = state.globalAHTUnit === 'min' ? 60 : (state.globalAHTUnit === 'hr' ? 3600 : 1);
+                streamHrs = ((val * (aht * mult)) / 3600) * (1 + (buf / 100));
+            } else {
+                streamHrs = val * (1 + (buf / 100));
+            }
+            
+            const peopleNeeded = streamHrs / shiftHrs;
+            totalLoadNeeded += streamHrs;
+
+            if (runningSupply >= streamHrs) {
+                capableUCs.push(name);
+                runningSupply -= streamHrs;
+            } else {
+                unableUCs.push(name);
+            }
+
+            cardsHtml += `
+                <div class="p-6 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm flex justify-between items-center">
+                    <div>
+                        <h5 class="text-xs font-black italic uppercase text-blue-600">${name}</h5>
+                        <div class="flex gap-4 mt-1">
+                            <p class="text-[9px] text-slate-400 font-black uppercase italic tracking-tighter">Demand Hours: <span class="text-slate-900">${streamHrs.toFixed(1)} HRS</span></p>
+                            <p class="text-[9px] text-slate-400 font-black uppercase italic tracking-tighter border-l pl-4">Shift: <span class="text-slate-900">${shiftHrs} HR</span></p>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 px-3 py-1 rounded-xl text-[10px] font-black text-blue-600 uppercase">
+                        ${peopleNeeded.toFixed(1)} CWs
+                    </div>
+                </div>`;
         });
+
+        const diff = netGlobalSupplyHrs - totalLoadNeeded;
+        const statusColor = diff >= 0 ? 'text-emerald-400' : 'text-red-400';
+
+        ucListCont.innerHTML = `
+            <div class="col-span-full p-8 bg-slate-900 rounded-[3rem] text-white mb-6 space-y-4 shadow-xl border border-slate-800">
+                <div class="flex items-center gap-3"><i data-lucide="users" class="w-5 h-5 text-blue-400"></i><h4 class="text-[10px] font-black tracking-[0.2em] uppercase text-slate-400">Requirement Breakdown</h4></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-2">
+                        <p class="text-[11px] font-black uppercase text-slate-300">Total Hours Needed: <span class="text-white">${totalLoadNeeded.toFixed(1)} HRS</span></p>
+                        <p class="text-[11px] font-black uppercase text-slate-300">Net Global Supply: <span class="text-blue-400">${netGlobalSupplyHrs.toFixed(1)} HRS</span></p>
+                        <p class="text-[11px] font-black uppercase ${statusColor}">Balance: ${Math.abs(diff).toFixed(1)} HR ${diff >= 0 ? 'Surplus' : 'Deficit'}</p>
+                    </div>
+                    <div class="bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+                        <p class="text-[10px] font-black text-slate-200 uppercase mb-2">Capable:</p>
+                        <p class="text-[10px] font-black text-slate-400 italic">${capableUCs.join(', ') || 'None'}</p>
+                        ${unableUCs.length > 0 ? `<p class="text-[10px] font-black text-red-400 uppercase mt-2 mb-1">Unable:</p><p class="text-[10px] font-black text-slate-500 line-through">${unableUCs.join(', ')}</p>` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4">${cardsHtml}</div>
+        `;
+        lucide.createIcons();
     }
 
     // --- RESTORED BLOCK DIST TAB (Summary & Table) ---
