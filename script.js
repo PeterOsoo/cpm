@@ -92,7 +92,7 @@ async function fetchHolidays(code) {
         // Save both date and name
         state.allHolidays[code] = data.map(h => ({ date: h.date, name: h.localName }));
         runAnalysis();
-    } catch (e) {}
+    } catch (e) { }
 }
 
 function toggleCountry(code) {
@@ -112,7 +112,7 @@ function setMode(m) {
 
     // 2. Update the Basics Labels
     // This changes the text above your main input box
-    document.getElementById('label-dailyTarget').innerText = 
+    document.getElementById('label-dailyTarget').innerText =
         m === 'volume' ? 'Target Daily Volume (Tasks)' : 'Target Daily Hours';
 
     // 3. Toggle Visibility of Volume-only tools
@@ -124,7 +124,7 @@ function setMode(m) {
     // This makes the active button white/blue and the inactive one grey
     const btnVol = document.getElementById('btn-vol');
     const btnHrs = document.getElementById('btn-hrs');
-    
+
     const activeClass = 'flex-1 py-2 text-[10px] font-black rounded-xl bg-white text-blue-600 shadow-sm uppercase transition-all';
     const inactiveClass = 'flex-1 py-2 text-[10px] font-black rounded-xl text-slate-500 uppercase transition-all';
 
@@ -133,7 +133,7 @@ function setMode(m) {
 
     // 5. THE "CRUISING" ADDITION: Force the Shift Strategy back to Number mode
     // This prevents the "quack" math where 100 hours suddenly becomes 100%
-    state.shiftMode = 'number'; 
+    state.shiftMode = 'number';
 
     // 6. Trigger the cascade of updates
     renderShifts(); // Updates the "Confirmed Hours" vs "Vol/Num" labels
@@ -143,21 +143,21 @@ function setMode(m) {
 function setShiftMode(m) {
     const target = parseFloat(document.getElementById('dailyInput').value) || 1;
     const inputs = document.querySelectorAll('.shift-input');
-    
+
     inputs.forEach(inp => {
         let val = parseFloat(inp.value) || 0;
         // If switching TO percent FROM numbers
         if (m === 'percent' && state.shiftMode === 'number') {
             inp.value = ((val / target) * 100).toFixed(1);
-        } 
+        }
         // If switching TO numbers FROM percent
         else if (m === 'number' && state.shiftMode === 'percent') {
             inp.value = ((val / 100) * target).toFixed(0);
         }
     });
-    
+
     state.shiftMode = m;
-    
+
     // Update button colors
     const nBtn = document.getElementById('sModeNum');
     const pBtn = document.getElementById('sModePerc');
@@ -253,7 +253,7 @@ function renderUCs() {
     for (let i = 0; i < count; i++) {
         // Grid changes from grid-cols-4 to grid-cols-3
         const gridCols = state.mode === 'volume' ? 'grid-cols-4' : 'grid-cols-3';
-        
+
         html += `
             <div class="uc-row p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3 mb-2">
                 <input type="text" value="Use Case ${i + 1}" oninput="runAnalysis()" class="uc-name-input w-full bg-transparent text-[10px] font-black text-blue-600 uppercase italic outline-none input-edit px-1">
@@ -304,10 +304,10 @@ function renderShifts() {
     let count = parseInt(countInput.value) || 1;
     const cont = document.getElementById('shiftStratContainer');
     const target = parseFloat(document.getElementById('dailyInput').value) || 0;
-    
+
     const nBtn = document.getElementById('sModeNum');
     const pBtn = document.getElementById('sModePerc');
-    
+
     if (state.mode === 'hours') {
         nBtn.innerText = "Hours";
         pBtn.innerText = "Percent %";
@@ -327,9 +327,9 @@ function renderShifts() {
             <div class="col-span-3 text-emerald-500">Buf %</div>
         </div>
     `;
-    
+
     const distValue = (state.shiftMode === 'percent') ? (100 / count).toFixed(1) : (target / count).toFixed(1);
-    
+
     for (let i = 0; i < count; i++) {
         const div = document.createElement('div');
         div.className = "shift-row grid grid-cols-12 items-center gap-1 p-2 bg-slate-50 rounded-xl border border-slate-100 mb-2";
@@ -354,15 +354,15 @@ function renderShifts() {
 function validateShifts() {
     const target = parseFloat(document.getElementById('dailyInput').value) || 0;
     const inputs = document.querySelectorAll('.shift-input');
-    let sum = 0; 
+    let sum = 0;
     inputs.forEach(inp => sum += (parseFloat(inp.value) || 0));
-    
+
     const box = document.getElementById('shiftValidation');
-    
+
     // Set the Goal: Is it 100% or the Daily Number?
     const goal = (state.shiftMode === 'percent') ? 100 : target;
     const diff = goal - sum;
-    
+
     // Set the Unit Label
     let unit = "";
     if (state.shiftMode === 'percent') {
@@ -371,17 +371,17 @@ function validateShifts() {
         unit = (state.mode === 'hours') ? "HRS" : "Tasks";
     }
 
-    if (Math.abs(diff) < 0.1) { 
-        box.innerHTML = `<span>Balanced (${sum}${unit})</span> <i data-lucide="check-circle" class="w-3 h-3 text-emerald-500"></i>`; 
-        box.className = "p-3 rounded-xl text-[10px] font-black flex items-center justify-between bg-emerald-50 text-emerald-600 mt-2 border border-emerald-100"; 
-    } else { 
+    if (Math.abs(diff) < 0.1) {
+        box.innerHTML = `<span>Balanced (${sum}${unit})</span> <i data-lucide="check-circle" class="w-3 h-3 text-emerald-500"></i>`;
+        box.className = "p-3 rounded-xl text-[10px] font-black flex items-center justify-between bg-emerald-50 text-emerald-600 mt-2 border border-emerald-100";
+    } else {
         const status = diff > 0 ? "Remaining" : "Over";
-        box.innerHTML = `<span>${status}: ${Math.abs(diff).toFixed(1)}${unit}</span> <i data-lucide="alert-circle" class="w-3 h-3 pulse-red text-red-500"></i>`; 
-        box.className = "p-3 rounded-xl text-[10px] font-black flex items-center justify-between bg-red-50 text-red-600 mt-2 border border-red-100"; 
+        box.innerHTML = `<span>${status}: ${Math.abs(diff).toFixed(1)}${unit}</span> <i data-lucide="alert-circle" class="w-3 h-3 pulse-red text-red-500"></i>`;
+        box.className = "p-3 rounded-xl text-[10px] font-black flex items-center justify-between bg-red-50 text-red-600 mt-2 border border-red-100";
     }
-    
-    lucide.createIcons(); 
-    runAnalysis(); 
+
+    lucide.createIcons();
+    runAnalysis();
 }
 function runAnalysis() {
     const dailyInput = parseFloat(document.getElementById('dailyInput').value) || 0;
@@ -480,7 +480,7 @@ function runAnalysis() {
                         <div class="flex items-center justify-between bg-slate-800/50 p-3 rounded-2xl border border-slate-700 group hover:border-amber-500/50 transition-all">
                             <div class="flex items-center gap-4">
                                 <div class="flex flex-col items-center justify-center bg-slate-900 h-10 w-10 rounded-xl border border-slate-700 shadow-inner">
-                                    <span class="text-[8px] font-black text-amber-500 leading-none uppercase">${MONTHS[targetMonth].substring(0,3)}</span>
+                                    <span class="text-[8px] font-black text-amber-500 leading-none uppercase">${MONTHS[targetMonth].substring(0, 3)}</span>
                                     <span class="text-sm font-black text-white leading-none mt-0.5">${h.date.split('-')[2]}</span>
                                 </div>
                                 <div>
@@ -574,7 +574,7 @@ function runAnalysis() {
     // --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS ---
     const ucListCont = document.getElementById('uc-list-container');
     const ucValidation = document.getElementById('ucValidation'); // Sidebar Paragraph Target
-    
+
     if (ucListCont) {
         ucListCont.innerHTML = '';
         let xTotalDemandHrs = 0;
@@ -589,7 +589,7 @@ function runAnalysis() {
             const val = parseFloat(row.querySelector('.uc-vol-input').value) || 0;
             const shiftHrs = parseFloat(row.querySelector('.uc-shift-input').value) || 8;
             const buf = parseFloat(row.querySelector('.uc-buf-input').value) || 0;
-            
+
             let streamHrs = 0;
             if (state.mode === 'volume') {
                 const aht = parseFloat(row.querySelector('.uc-aht-input').value) || 0;
@@ -598,7 +598,7 @@ function runAnalysis() {
             } else {
                 streamHrs = val * (1 + (buf / 100));
             }
-            
+
             const peopleNeeded = streamHrs / shiftHrs;
             xTotalDemandHrs += streamHrs;
 
@@ -637,9 +637,9 @@ function runAnalysis() {
                     </p>
                     <div class="pt-2 border-t border-slate-100">
                         <p class="text-[9px] font-black uppercase italic tracking-wider ${isDeficit ? 'text-red-500' : 'text-emerald-600'}">
-                            ${isDeficit 
-                                ? `⚠️ Deficit: Short ${Math.abs(diff).toFixed(1)} hours` 
-                                : `✅ Surplus: ${Math.abs(diff).toFixed(1)} extra hours`}
+                            ${isDeficit
+                    ? `⚠️ Deficit: Short ${Math.abs(diff).toFixed(1)} hours`
+                    : `✅ Surplus: ${Math.abs(diff).toFixed(1)} extra hours`}
                         </p>
                     </div>
                 </div>
@@ -668,8 +668,8 @@ function runAnalysis() {
         `;
         lucide.createIcons();
     }
-   // --- UPDATED BLOCK DIST TAB: DYNAMIC COLUMNS & CLEAN FORMAT ---
-  // --- UPDATED BLOCK DIST TAB: DYNAMIC SHIFT LENGTH & TPT LINE ---
+    // --- UPDATED BLOCK DIST TAB: DYNAMIC COLUMNS & CLEAN FORMAT ---
+    // --- UPDATED BLOCK DIST TAB: ADDED TOTALS & DYNAMIC SUMMARY ---
     const blockCont = document.getElementById('view-blocks');
     if (blockCont) {
         let totalVol = 0;
@@ -678,28 +678,21 @@ function runAnalysis() {
         let rowsHtml = '';
         const shiftRows = document.querySelectorAll('.shift-row');
         const isHoursMode = (state.mode === 'hours');
-        
+
         shiftRows.forEach((row) => {
             const name = row.querySelector('.shift-name-input').value;
             const val = parseFloat(row.querySelector('.shift-input').value) || 0;
-            
-            // --- THE FIX: Grab the specific Hrs/CW from the sidebar row ---
-            const shiftLen = parseFloat(row.querySelector('.shift-len-input').value) || 8; 
+            const shiftLen = parseFloat(row.querySelector('.shift-len-input').value) || 8;
             const bufferVal = parseFloat(row.querySelector('.shift-buffer-input').value) || 0;
-            
-            // 1. Calculate Base (if % of daily target or raw number)
+
             let bBasis = (state.shiftMode === 'percent') ? (dailyInput * (val / 100)) : val;
-            
-            // 2. Convert to Hours: If Volume mode, divide by TPT. If Hours mode, it is already hours.
             let bHrs = isHoursMode ? bBasis : (bBasis / tpt);
-            
-            // 3. Apply the Buffer %
             let finalHrs = bHrs * (1 + (bufferVal / 100));
             
-            // 4. Calculate Headcount: Divide Final Hours by the specific Shift Length (Hrs/CW)
-            let bCWs = finalHrs / (shiftLen || 8); 
+            // MATH UPDATE: Round up to whole person per shift
+            let bCWs = Math.ceil(finalHrs / (shiftLen || 8));
 
-            totalVol += (isHoursMode ? 0 : bBasis); // Only track tasks if in volume mode
+            totalVol += (isHoursMode ? 0 : bBasis);
             totalHrs += finalHrs;
             totalCW += bCWs;
 
@@ -712,15 +705,15 @@ function runAnalysis() {
                     </td>` : ''}
                     <td class="px-10 py-6 text-center font-mono font-black text-slate-700">${finalHrs.toFixed(1)} HRS</td>
                     <td class="px-10 py-6 text-right px-10 font-mono font-black text-blue-600">
-                        ${bCWs.toFixed(1)} CWs
+                        ${bCWs}
                     </td>
                 </tr>`;
         });
 
         const availableCWs = (netGlobalSupplyHrs / 8).toFixed(1);
-        const projectedCWs = totalCW.toFixed(1);
-        const diffCWs = Math.abs(availableCWs - projectedCWs).toFixed(1);
-        const isDeficit = parseFloat(projectedCWs) > parseFloat(availableCWs);
+        const projectedCWs = totalCW; // Whole number from the sum of ceils
+        const diffCWs = Math.abs(parseFloat(availableCWs) - projectedCWs).toFixed(1);
+        const isDeficit = projectedCWs > parseFloat(availableCWs);
         const tptHrsNeeded = totalVol / tpt;
 
         blockCont.innerHTML = `
@@ -737,13 +730,12 @@ function runAnalysis() {
                 <div class="text-[10px] font-black text-emerald-500 italic uppercase tracking-widest font-mono leading-relaxed">
                     Net Available: ${netGlobalSupplyHrs.toFixed(1)} HRS
                 </div>
+                
                 <div class="text-[10px] font-black text-blue-500 italic uppercase tracking-widest leading-relaxed">
-                    No. of CWs available FT (8h basis): ${availableCWs} CWs
+                    Total Strategy Requirement: ${projectedCWs} CWs (Based on headcount total)
                 </div>
-                <div class="text-[10px] font-black ${isDeficit ? 'text-red-500' : 'text-emerald-600'} uppercase italic tracking-widest pt-2 border-t border-slate-200 leading-relaxed mt-2">
-                    Gap Analysis: Based on your availability and a total strategy projection of ${projectedCWs} CWs, 
-                    you have a ${isDeficit ? 'deficit and need ' + diffCWs + ' more' : 'surplus of ' + diffCWs} workers to deliver.
-                </div>
+
+               
             </div>
 
             <div class="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
@@ -756,12 +748,24 @@ function runAnalysis() {
                             <th class="text-right px-10 italic">Headcount</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">${rowsHtml}</tbody>
+                    <tbody class="divide-y divide-slate-100">
+                        ${rowsHtml}
+                    </tbody>
+                    <tfoot class="text-[13px] font-black text-slate-500 uppercase tracking-tight border-t-2 border-slate-200 bg-slate-50/80">
+                        <tr>
+                            <td class="px-10 py-5 italic text-slate-900">Total Strategy</td>
+                            ${!isHoursMode ? `
+                            <td class="text-center italic text-slate-400">${Math.round(totalVol).toLocaleString()} Vol</td>` : ''}
+                            <td class="text-center font-mono text-slate-800">${totalHrs.toFixed(1)} HRS</td>
+                            <td class="text-right px-10 font-mono text-blue-700 text-lg">
+                                ${totalCW} <span class="text-[13px] tracking-widest">CWs</span>
+                            </td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         `;
     }
-
     // --- SCOREBOARD ---
     document.getElementById('scoreboard').innerHTML = [
         { label: 'Daily Demand', val: baseDailyHrs.toFixed(1) + ' HRS' },
