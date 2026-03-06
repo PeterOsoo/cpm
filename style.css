@@ -1,73 +1,158 @@
-/* Import Inter for readability and JetBrains Mono for clean data/numbers */
+/* 1. IMPORTS & GLOBAL CONFIG */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
 
+:root {
+    --primary: #6366f1;       /* Indigo */
+    --primary-soft: rgba(99, 102, 241, 0.1);
+    --secondary: #3b82f6;     /* Blue */
+    --success: #10b981;       /* Emerald */
+    --danger: #ef4444;        /* Red */
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-900: #0f172a;
+    --radius-xl: 1.5rem;      /* 24px */
+    --radius-lg: 0.75rem;     /* 12px */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* 2. BASE RESET */
 body {
-  font-family: 'Inter', sans-serif;
-  letter-spacing: -0.02em; /* Modern tight tracking */
-  background-color: #f8fafc;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.02em;
+    background-color: var(--slate-50);
+    color: var(--slate-900);
+    -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, .font-black {
-  font-weight: 900;
-  letter-spacing: -0.04em; /* Extra tight for headings */
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
 }
 
 .font-mono {
-  font-family: 'JetBrains Mono', monospace !important;
-  letter-spacing: -0.05em;
+    font-family: 'JetBrains Mono', monospace !important;
+    letter-spacing: -0.05em;
 }
 
-/* Cleaner Input Styles */
-input[type="number"], input[type="text"] {
-  transition: all 0.2s ease;
-  border-color: #e2e8f0;
+/* 3. INPUT REFINEMENT */
+input[type="number"], 
+input[type="text"] {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--slate-200);
+    outline: none;
 }
 
-input[type="number"]:focus, input[type="text"]:focus {
-  border-color: #6366f1; /* Indigo focus */
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-  background-color: #fff;
+/* Chrome/Safari removal of spin buttons */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
-/* Label styling for the tracking-widest feel you like */
-label {
-  letter-spacing: 0.15em;
-  font-weight: 800;
+.input-pill {
+    border-radius: var(--radius-lg);
+    background: white;
+    font-weight: 800;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
 }
 
+.input-pill:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-soft);
+    background: white;
+}
+
+.input-edit {
+    border-bottom: 2px solid transparent;
+    cursor: text;
+    font-weight: 800;
+}
+
+.input-edit:focus {
+    border-bottom-color: var(--secondary);
+    background: var(--slate-100);
+    transform: translateY(-1px);
+}
+
+/* 4. ACCORDION ENGINE (Smooth S-Curve) */
 .accordion-content {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.4s ease-in-out;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0;
+    transform: translateY(-8px);
 }
 
 .accordion-content.open {
-    max-height: 4000px;
+    max-height: 2000px; /* More realistic than 4000 for animation sync */
     opacity: 1;
+    transform: translateY(0);
 }
 
 .rotate-180 {
     transform: rotate(180deg);
 }
 
-input[type=number]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
+/* 5. INTERACTIVE ELEMENTS */
+.btn-toggle {
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+    border: 1px solid var(--slate-200);
+    background: white;
+    color: var(--slate-400);
+    cursor: pointer;
 }
 
-.input-pill {
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    transition: all 0.2s;
+.btn-toggle:hover {
+    border-color: var(--slate-400);
+    color: var(--slate-500);
+}
+
+.btn-toggle.active {
+    background: var(--secondary);
+    color: white;
+    border-color: var(--secondary);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.tab-btn {
+    padding: 14px 24px;
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--slate-500);
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.tab-btn:hover {
+    color: var(--primary);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: linear-gradient(to bottom, transparent, var(--primary-soft));
+}
+
+/* 6. LABELS & UTILITIES */
+label {
+    letter-spacing: 0.12em;
     font-weight: 800;
-    text-align: center;
-    outline: none;
-}
-
-.input-pill:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    background: #f8fafc;
+    text-transform: uppercase;
+    color: var(--slate-500);
+    font-size: 10px;
 }
 
 .pulse-red {
@@ -75,61 +160,14 @@ input[type=number]::-webkit-inner-spin-button {
 }
 
 @keyframes pulse {
-
-    0%,
-    100% {
-        color: #ef4444;
-    }
-
-    50% {
-        color: #b91c1c;
-        opacity: 0.8;
-    }
+    0%, 100% { color: var(--danger); opacity: 1; }
+    50% { color: #b91c1c; opacity: 0.6; }
 }
 
-.input-edit {
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-    cursor: text;
-    font-weight: 800;
-}
-
-.input-edit:focus {
-    border-bottom-color: #3b82f6;
-    outline: none;
-    background: #f8fafc;
-}
-
-.btn-toggle {
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 10px;
-    font-weight: 900;
-    transition: all 0.2s;
-    border: 1px solid #e2e8f0;
+/* Custom Card Class for Dashboard Sections */
+.dashboard-card {
     background: white;
-    color: #94a3b8;
-}
-
-.btn-toggle.active {
-    background: #3b82f6;
-    color: white;
-    border-color: #3b82f6;
-}
-
-.tab-btn {
-    padding: 12px 20px;
-    font-size: 10px;
-    font-weight: 900;
-    color: #64748b;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.tab-btn.active {
-    color: #3b82f6;
-    border-bottom-color: #3b82f6;
-    background: rgba(59, 130, 246, 0.03);
+    border: 1px solid var(--slate-100);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
 }
