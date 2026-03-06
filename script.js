@@ -106,35 +106,70 @@ function toggleCountry(code) {
     }
     runAnalysis();
 }
-
 function setMode(m) {
+    // 1. Update the Global State
     state.mode = m;
-    document.getElementById('btn-vol').className = m === 'volume' ? 'flex-1 py-2 text-[10px] font-black rounded-xl transition-all bg-white text-blue-600 shadow-sm uppercase' : 'flex-1 py-2 text-[10px] font-black rounded-xl transition-all text-slate-500 uppercase';
-    document.getElementById('btn-hrs').className = m === 'hours' ? 'flex-1 py-2 text-[10px] font-black rounded-xl bg-white text-blue-600 shadow-sm uppercase' : 'flex-1 py-2 text-[10px] font-black rounded-xl transition-all text-slate-500 uppercase';
 
-    document.getElementById('label-dailyTarget').innerText = m === 'volume' ? 'Target Daily Volume (Tasks)' : 'Target Daily Hours';
+    // 2. Update the Basics Labels
+    // This changes the text above your main input box
+    document.getElementById('label-dailyTarget').innerText = 
+        m === 'volume' ? 'Target Daily Volume (Tasks)' : 'Target Daily Hours';
 
-    // CHANGE: Ensure Shift Strategy Section is ALWAYS visible regardless of mode
+    // 3. Toggle Visibility of Volume-only tools
+    // We hide the TPT (Tasks Per Hour) box if we are just working with raw hours
+    document.getElementById('tptContainer').style.display = m === 'volume' ? 'block' : 'none';
     document.getElementById('shiftStratSec').style.display = 'block';
 
-    document.getElementById('tptContainer').style.display = m === 'volume' ? 'block' : 'none';
-    syncAll();
-}
+    // 4. Style the "Mode" Buttons (Volume vs Hours)
+    // This makes the active button white/blue and the inactive one grey
+    const btnVol = document.getElementById('btn-vol');
+    const btnHrs = document.getElementById('btn-hrs');
+    
+    const activeClass = 'flex-1 py-2 text-[10px] font-black rounded-xl bg-white text-blue-600 shadow-sm uppercase transition-all';
+    const inactiveClass = 'flex-1 py-2 text-[10px] font-black rounded-xl text-slate-500 uppercase transition-all';
 
+    btnVol.className = m === 'volume' ? activeClass : inactiveClass;
+    btnHrs.className = m === 'hours' ? activeClass : inactiveClass;
+
+    // 5. THE "CRUISING" ADDITION: Force the Shift Strategy back to Number mode
+    // This prevents the "quack" math where 100 hours suddenly becomes 100%
+    state.shiftMode = 'number'; 
+
+    // 6. Trigger the cascade of updates
+    renderShifts(); // Updates the "Confirmed Hours" vs "Vol/Num" labels
+    renderUCs();    // Updates the Use Case columns (3 vs 4 columns)
+    syncAll();      // Re-runs all the math for the dashboard
+}
 function setShiftMode(m) {
-    const totalTarget = parseFloat(document.getElementById('dailyInput').value) || 1;
+    const target = parseFloat(document.getElementById('dailyInput').value) || 1;
     const inputs = document.querySelectorAll('.shift-input');
+    
     inputs.forEach(inp => {
         let val = parseFloat(inp.value) || 0;
-        if (m === 'percent' && state.shiftMode === 'number') inp.value = ((val / totalTarget) * 100).toFixed(1);
-        else if (m === 'number' && state.shiftMode === 'percent') inp.value = Math.round((val / 100) * totalTarget);
+        // If switching TO percent FROM numbers
+        if (m === 'percent' && state.shiftMode === 'number') {
+            inp.value = ((val / target) * 100).toFixed(1);
+        } 
+        // If switching TO numbers FROM percent
+        else if (m === 'number' && state.shiftMode === 'percent') {
+            inp.value = ((val / 100) * target).toFixed(0);
+        }
     });
+    
     state.shiftMode = m;
+    
+    // Update button colors
     const nBtn = document.getElementById('sModeNum');
     const pBtn = document.getElementById('sModePerc');
-    if (m === 'number') { nBtn.className = 'flex-1 py-1 text-[9px] font-black rounded-lg transition-all bg-white text-purple-600 shadow-sm active'; pBtn.className = 'flex-1 py-1 text-[9px] font-black rounded-lg transition-all text-slate-500'; }
-    else { pBtn.className = 'flex-1 py-1 text-[9px] font-black rounded-lg transition-all bg-white text-purple-600 shadow-sm active'; nBtn.className = 'flex-1 py-1 text-[9px] font-black rounded-lg transition-all text-slate-500'; }
-    runAnalysis();
+    if (m === 'number') {
+        nBtn.className = 'flex-1 py-1 text-[9px] font-black rounded-lg bg-white text-purple-600 shadow-sm';
+        pBtn.className = 'flex-1 py-1 text-[9px] font-black rounded-lg text-slate-500';
+    } else {
+        pBtn.className = 'flex-1 py-1 text-[9px] font-black rounded-lg bg-white text-purple-600 shadow-sm';
+        nBtn.className = 'flex-1 py-1 text-[9px] font-black rounded-lg text-slate-500';
+    }
+
+    renderShifts(); // Refresh the labels
 }
 
 function renderRoster() {
@@ -263,19 +298,44 @@ function setMode(m) {
     syncAll();
 }
 
-// Ensure the renderShifts logic uses the correct basis for distribution
+// Ensure the renderShifts logic uses the correct basis for distributionfunction renderShifts() {
 function renderShifts() {
     let countInput = document.getElementById('shiftBlockCount');
     let count = parseInt(countInput.value) || 1;
     const cont = document.getElementById('shiftStratContainer');
-
-    // The target is either tasks or hours depending on state.mode
     const target = parseFloat(document.getElementById('dailyInput').value) || 0;
+    
+    // Update the Toggle Buttons labels dynamically
+    const nBtn = document.getElementById('sModeNum');
+    const pBtn = document.getElementById('sModePerc');
+    
+    if (state.mode === 'hours') {
+        nBtn.innerText = "Hours";
+        pBtn.innerText = "Percent %";
+    } else {
+        nBtn.innerText = "Numbers";
+        pBtn.innerText = "Percent %";
+    }
 
-    cont.innerHTML = `<div class="grid grid-cols-12 gap-2 px-2 text-[8px] font-black text-slate-400 uppercase italic text-center mb-1"><div class="col-span-4 text-left">Shift Name</div><div class="col-span-5">${state.mode === 'volume' ? 'Vol/Num' : 'Hours'}</div><div class="col-span-3">Buffer %</div></div>`;
+    // Determine the Column Header Label
+    let columnLabel = "";
+    if (state.shiftMode === 'percent') {
+        columnLabel = "Percent %";
+    } else {
+        columnLabel = (state.mode === 'hours') ? "Confirmed Hours" : "Volume / Num";
+    }
 
-    const dist = (state.shiftMode === 'number') ? distributeInteger(target, count) : new Array(count).fill((100 / count).toFixed(1));
-
+    cont.innerHTML = `
+        <div class="grid grid-cols-12 gap-2 px-2 text-[8px] font-black text-slate-400 uppercase italic text-center mb-1">
+            <div class="col-span-4 text-left">Shift Name</div>
+            <div class="col-span-5 text-purple-600 underline">${columnLabel}</div>
+            <div class="col-span-3">Buffer %</div>
+        </div>
+    `;
+    
+    // Distribution logic to prevent "quack" values
+    const distValue = (state.shiftMode === 'percent') ? (100 / count).toFixed(1) : (target / count).toFixed(1);
+    
     for (let i = 0; i < count; i++) {
         const div = document.createElement('div');
         div.className = "shift-row grid grid-cols-12 items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-100 mb-2";
@@ -284,7 +344,7 @@ function renderShifts() {
                 <input type="text" value="Shift ${i + 1}" oninput="runAnalysis()" class="shift-name-input text-[9px] font-black text-purple-600 uppercase w-full bg-transparent outline-none italic input-edit px-1">
             </div>
             <div class="col-span-5">
-                <input type="number" value="${dist[i]}" oninput="validateShifts()" class="shift-input w-full bg-white p-1 text-xs font-black border rounded-lg outline-none text-center shadow-sm">
+                <input type="number" value="${distValue}" oninput="validateShifts()" class="shift-input w-full bg-white p-1 text-xs font-black border rounded-lg outline-none text-center shadow-sm">
             </div>
             <div class="col-span-3">
                 <input type="number" value="10" oninput="runAnalysis()" class="shift-buffer-input w-full bg-white p-1 text-xs font-black border border-emerald-100 text-emerald-600 rounded-lg outline-none text-center shadow-sm">
@@ -297,15 +357,35 @@ function renderShifts() {
 function validateShifts() {
     const target = parseFloat(document.getElementById('dailyInput').value) || 0;
     const inputs = document.querySelectorAll('.shift-input');
-    let sum = 0; inputs.forEach(inp => sum += (parseFloat(inp.value) || 0));
+    let sum = 0; 
+    inputs.forEach(inp => sum += (parseFloat(inp.value) || 0));
+    
     const box = document.getElementById('shiftValidation');
-    const goal = state.shiftMode === 'percent' ? 100 : target;
+    
+    // Set the Goal: Is it 100% or the Daily Number?
+    const goal = (state.shiftMode === 'percent') ? 100 : target;
     const diff = goal - sum;
-    if (Math.abs(diff) < 0.1) { box.innerHTML = `<span>Distribution Balanced</span> <i data-lucide="check-circle" class="w-3 h-3 text-emerald-500"></i>`; box.className = "p-3 rounded-xl text-[10px] font-black flex items-center justify-between bg-emerald-50 text-emerald-600 mt-2 border border-emerald-100"; }
-    else { const label = state.shiftMode === 'percent' ? `${Math.abs(diff).toFixed(1)}%` : Math.abs(diff).toFixed(0); box.innerHTML = `<span>Off: ${label}</span> <i data-lucide="alert-circle" class="w-3 h-3 pulse-red text-red-500"></i>`; box.className = "p-3 rounded-xl text-[10px] font-black flex items-center justify-between bg-red-50 text-red-600 mt-2 border border-red-100"; }
-    lucide.createIcons(); runAnalysis();
-}
+    
+    // Set the Unit Label
+    let unit = "";
+    if (state.shiftMode === 'percent') {
+        unit = "%";
+    } else {
+        unit = (state.mode === 'hours') ? "HRS" : "Tasks";
+    }
 
+    if (Math.abs(diff) < 0.1) { 
+        box.innerHTML = `<span>Balanced (${sum}${unit})</span> <i data-lucide="check-circle" class="w-3 h-3 text-emerald-500"></i>`; 
+        box.className = "p-3 rounded-xl text-[10px] font-black flex items-center justify-between bg-emerald-50 text-emerald-600 mt-2 border border-emerald-100"; 
+    } else { 
+        const status = diff > 0 ? "Remaining" : "Over";
+        box.innerHTML = `<span>${status}: ${Math.abs(diff).toFixed(1)}${unit}</span> <i data-lucide="alert-circle" class="w-3 h-3 pulse-red text-red-500"></i>`; 
+        box.className = "p-3 rounded-xl text-[10px] font-black flex items-center justify-between bg-red-50 text-red-600 mt-2 border border-red-100"; 
+    }
+    
+    lucide.createIcons(); 
+    runAnalysis(); 
+}
 function runAnalysis() {
     const dailyInput = parseFloat(document.getElementById('dailyInput').value) || 0;
     const tpt = parseFloat(document.getElementById('globalTPT').value) || 1;
@@ -569,65 +649,90 @@ function runAnalysis() {
         lucide.createIcons();
     }
 
-    // --- RESTORED BLOCK DIST TAB (Summary & Table) ---
+   // --- UPDATED BLOCK DIST TAB: DYNAMIC COLUMNS & CLEAN FORMAT ---
+   // --- UPDATED BLOCK DIST TAB: ADDED TPT CALC LINE ---
     const blockCont = document.getElementById('view-blocks');
     if (blockCont) {
-        if (state.mode === 'test') {
-            blockCont.innerHTML = `<div class="p-20 text-center text-slate-400 font-black italic uppercase tracking-widest">Not available in Hours Mode.</div>`;
-        } else {
-            let totalVol = 0;
-            let totalHrs = 0;
-            let totalCW = 0;
-            let rowsHtml = '';
+        let totalVol = 0;
+        let totalHrs = 0;
+        let totalCW = 0;
+        let rowsHtml = '';
+        const shiftRows = document.querySelectorAll('.shift-row');
+        const isHoursMode = (state.mode === 'hours');
+        
+        shiftRows.forEach((row) => {
+            const name = row.querySelector('.shift-name-input').value;
+            const val = parseFloat(row.querySelector('.shift-input').value) || 0;
+            const bufferVal = parseFloat(row.querySelector('.shift-buffer-input').value) || 0;
+            
+            let bVol = (state.shiftMode === 'percent') ? (dailyInput * (val / 100)) : val;
+            let bHrs = isHoursMode ? bVol : (bVol / tpt);
+            let finalHrs = bHrs * (1 + (bufferVal / 100));
+            let bCWs = finalHrs / 8;
 
-            document.querySelectorAll('.shift-row').forEach((row) => {
-                const name = row.querySelector('.shift-name-input').value;
-                const val = parseFloat(row.querySelector('.shift-input').value) || 0;
-                const bufferVal = parseFloat(row.querySelector('.shift-buffer-input').value) || 0;
+            totalVol += bVol;
+            totalHrs += finalHrs;
+            totalCW += bCWs;
 
-                let bVol = (state.shiftMode === 'percent') ? (dailyInput * (val / 100)) : val;
-                let bHrs = (bVol / tpt) * (1 + (bufferVal / 100));
-                let bCWs = bHrs / 8;
-
-                totalVol += bVol;
-                totalHrs += bHrs;
-                totalCW += bCWs;
-
-                rowsHtml += `<tr class="hover:bg-slate-50 border-b">
+            rowsHtml += `
+                <tr class="hover:bg-slate-50 border-b">
                     <td class="px-10 py-6 font-black italic uppercase text-purple-600">${name}</td>
-                    <td class="px-10 py-6 text-center italic text-xs font-black">${Math.round(bVol).toLocaleString()}</td>
-                    <td class="px-10 py-6 text-center font-mono font-black text-slate-700">${bHrs.toFixed(1)} HRS</td>
-                    <td class="px-10 py-6 text-right px-10"><span class="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black">${bCWs.toFixed(1)}</span></td>
+                    ${!isHoursMode ? `
+                    <td class="px-10 py-6 text-center italic text-xs font-black">
+                        ${state.shiftMode === 'percent' ? val + '%' : val.toLocaleString()} Vol
+                    </td>` : ''}
+                    <td class="px-10 py-6 text-center font-mono font-black text-slate-700">${finalHrs.toFixed(1)} HRS</td>
+                    <td class="px-10 py-6 text-right px-10 font-mono font-black text-blue-600">
+                        ${bCWs.toFixed(1)} CWs
+                    </td>
                 </tr>`;
-            });
+        });
 
-            // This is the part we restored: The Top Summary
-            blockCont.innerHTML = `
-                <div class="space-y-1 mb-6 p-4 bg-slate-50 rounded-[1.5rem] border border-slate-100">
-                    <div class="text-[10px] font-black text-slate-400 italic uppercase tracking-widest">Distributed: ${Math.round(totalVol).toLocaleString()} Tasks</div>
-                    <div class="text-[10px] font-black text-emerald-500 italic uppercase tracking-widest font-mono">Net Available: ${netGlobalSupplyHrs.toFixed(1)} HRS</div>
-                    <div class="text-[10px] font-black text-blue-500 italic uppercase tracking-widest">
-                        No. of CWs available FT: ${(netGlobalSupplyHrs / 8).toFixed(1)} CWs (Derived from availability section)
-                    </div>
-                    <div class="text-[10px] font-black ${totalCW > (netGlobalSupplyHrs / 8) ? 'text-red-500' : 'text-emerald-600'} uppercase italic tracking-widest pt-1 border-t border-slate-200 leading-relaxed">
-                        Gap Analysis: Based on your availability of ${(netGlobalSupplyHrs / 8).toFixed(1)} FT CWs and a total projection of ${totalCW.toFixed(1)} CWs, 
-                        ${totalCW > (netGlobalSupplyHrs / 8) ?
-                    `you have a deficit and need ${Math.abs(totalCW - (netGlobalSupplyHrs / 8)).toFixed(1)} more FT CWs to deliver` :
-                    `you have a surplus of ${Math.abs((netGlobalSupplyHrs / 8) - totalCW).toFixed(1)} FT CWs available to deliver`} 
-                    </div>
+        const availableCWs = (netGlobalSupplyHrs / 8).toFixed(1);
+        const projectedCWs = totalCW.toFixed(1);
+        const diffCWs = Math.abs(availableCWs - projectedCWs).toFixed(1);
+        const isDeficit = projectedCWs > availableCWs;
+
+        // NEW: Calculate the raw hours needed based on TPT (before buffer)
+        const tptHrsNeeded = totalVol / tpt;
+
+        blockCont.innerHTML = `
+            <div class="space-y-1 mb-6 p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <div class="text-[10px] font-black text-slate-400 italic uppercase tracking-widest leading-relaxed">
+                    Distributed: ${Math.round(totalVol).toLocaleString()} ${isHoursMode ? 'Hours' : 'Tasks'}
                 </div>
+                
+                ${!isHoursMode ? `
+                <div class="text-[10px] font-black text-blue-400 italic uppercase tracking-widest leading-relaxed">
+                    Hours needed based on TPT (${tpt}): ${tptHrsNeeded.toFixed(1)} HRS
+                </div>` : ''}
+
+                <div class="text-[10px] font-black text-emerald-500 italic uppercase tracking-widest font-mono leading-relaxed">
+                    Net Available: ${netGlobalSupplyHrs.toFixed(1)} HRS
+                </div>
+                <div class="text-[10px] font-black text-blue-500 italic uppercase tracking-widest leading-relaxed">
+                    No. of CWs available FT: ${availableCWs} CWs (Derived from availability section)
+                </div>
+                <div class="text-[10px] font-black ${isDeficit ? 'text-red-500' : 'text-emerald-600'} uppercase italic tracking-widest pt-2 border-t border-slate-200 leading-relaxed mt-2">
+                    Gap Analysis: Based on your availability of ${availableCWs} FT CWs and a total projection of ${projectedCWs} CWs, 
+                    you have a ${isDeficit ? 'deficit and need ' + diffCWs + ' more' : 'surplus of ' + diffCWs} FT CWs to deliver.
+                </div>
+            </div>
+
+            <div class="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
                 <table class="w-full text-left">
                     <thead>
-                        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b">
-                            <th class="py-4">Shift Block</th>
-                            <th class="text-center">Vol</th>
-                            <th class="text-center">Hours</th>
-                            <th class="text-right px-10">CWs</th>
+                        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b bg-slate-50/50">
+                            <th class="px-10 py-4 italic">Shift Block</th>
+                            ${!isHoursMode ? `<th class="text-center italic">Basis</th>` : ''}
+                            <th class="text-center italic">Hours</th>
+                            <th class="text-right px-10 italic">Headcount</th>
                         </tr>
                     </thead>
-                    <tbody>${rowsHtml}</tbody>
-                </table>`;
-        }
+                    <tbody class="divide-y divide-slate-100">${rowsHtml}</tbody>
+                </table>
+            </div>
+        `;
     }
 
     // --- SCOREBOARD ---
