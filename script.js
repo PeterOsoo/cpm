@@ -230,7 +230,7 @@ function renderUCs() {
                     
                     ${state.mode === 'volume' ? `
                     <div class="space-y-1">
-                        <label class="text-[7px] font-black text-slate-400 uppercase ml-1">Avg AHT</label>
+                        <label class="text-[7px] font-black text-slate-400 uppercase ml-1">Throughput</label>
                         <input type="number" value="120" oninput="runAnalysis()" class="uc-aht-input p-2 text-[11px] font-black border rounded-xl outline-none text-center bg-white shadow-sm w-full">
                     </div>` : ''}
 
