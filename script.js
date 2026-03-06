@@ -89,9 +89,10 @@ async function fetchHolidays(code) {
     try {
         const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/2026/${code}`);
         const data = await res.json();
-        state.allHolidays[code] = data.map(h => h.date);
+        // Save both date and name
+        state.allHolidays[code] = data.map(h => ({ date: h.date, name: h.localName }));
         runAnalysis();
-    } catch (e) { }
+    } catch (e) {}
 }
 
 function toggleCountry(code) {
@@ -357,22 +358,52 @@ function runAnalysis() {
         }
     }
 
-    // --- HOLIDAY SUMMARY LOGIC (Unchanged) ---
+    // --- STYLED HOLIDAY RISK ASSESSMENT ---
     const holidayRiskBox = document.getElementById('summaryHolidayRisk');
     const monthPadded = (targetMonth + 1).toString().padStart(2, '0');
     let monthHolidays = [];
+
     state.selectedCountries.forEach(code => {
         const hols = state.allHolidays[code] || [];
-        hols.forEach(hDate => {
-            if (hDate.startsWith(`2026-${monthPadded}`)) {
-                monthHolidays.push(`"${code}" on ${hDate.split('-')[2]}`);
+        hols.forEach(h => {
+            if (h.date.startsWith(`2026-${monthPadded}`)) {
+                monthHolidays.push({ ...h, country: code });
             }
         });
     });
+
     if (holidayRiskBox) {
-        holidayRiskBox.innerHTML = monthHolidays.length > 0
-            ? `<p class="mb-2 text-amber-400 font-black uppercase tracking-tighter">Impact detected:</p><div class="flex flex-wrap gap-2">${monthHolidays.map(h => `<span class="bg-slate-800 px-2 py-1 rounded border border-slate-700 text-[9px]">${h}</span>`).join('')}</div>`
-            : `No public holidays detected in "${MONTHS[targetMonth]}" for selected territories.`;
+        if (monthHolidays.length > 0) {
+            // Sort holidays by date
+            monthHolidays.sort((a, b) => a.date.localeCompare(b.date));
+
+            holidayRiskBox.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                    ${monthHolidays.map(h => `
+                        <div class="flex items-center justify-between bg-slate-800/50 p-3 rounded-2xl border border-slate-700 group hover:border-amber-500/50 transition-all">
+                            <div class="flex items-center gap-4">
+                                <div class="flex flex-col items-center justify-center bg-slate-900 h-10 w-10 rounded-xl border border-slate-700 shadow-inner">
+                                    <span class="text-[8px] font-black text-amber-500 leading-none uppercase">${MONTHS[targetMonth].substring(0,3)}</span>
+                                    <span class="text-sm font-black text-white leading-none mt-0.5">${h.date.split('-')[2]}</span>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-black text-slate-100 uppercase tracking-tight line-clamp-1">${h.name}</p>
+                                    <p class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-0.5">Territory: ${h.country}</p>
+                                </div>
+                            </div>
+                            <div class="bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20">
+                                <span class="text-[8px] font-black text-amber-500 uppercase italic">Impact High</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            holidayRiskBox.innerHTML = `
+                <div class="py-4 text-center">
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">No regional holidays detected for ${MONTHS[targetMonth]} 2026</p>
+                </div>`;
+        }
     }
 
     // --- ROUND-ROBIN DISTRIBUTION LOGIC ---
