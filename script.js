@@ -424,10 +424,16 @@ function runAnalysis() {
 
                 // Subtract Regional Holidays if "Work Holidays" is NO
                 let isHoliday = !state.workHolidays && state.selectedCountries.some(code =>
-                    state.allHolidays[code]?.includes(d.dateStr)
+                    state.allHolidays[code]?.some(h => h.date === d.dateStr)
                 );
 
-                if (isActive && !isHoliday) netWeekDays++;
+                if (isActive && !isHoliday) {
+                    netWeekDays++;
+                    // Apply the intensity slider to weekends (Sat=6, Sun=0)
+                    let isWeekend = (d.dayNum === 0 || d.dayNum === 6);
+                    let weight = isWeekend ? state.intensity : 1;
+                    totalMonthHrs += (baseDailyHrs * weight); // This builds the real monthly total
+                }
             });
 
             // Math: Base Daily Need vs. What is available in the Roster
@@ -526,7 +532,7 @@ function runAnalysis() {
         }
     }
 
-   // --- RENDER TABLE ROWS ---
+    // --- RENDER TABLE ROWS ---
     let totalHC = 0;
     let totalSupply = 0;
     let totalAdjCount = 0;
@@ -535,7 +541,7 @@ function runAnalysis() {
         const hrsVal = parseFloat(row.querySelector('.roster-hrs-val').value) || 0;
         const hcVal = parseFloat(row.querySelector('.roster-hc-val').value) || 0;
         const blockSupply = (hrsVal * hcVal) * (1 - forfeit);
-        
+
         // Accumulate totals
         totalHC += hcVal;
         totalSupply += blockSupply;
@@ -595,11 +601,11 @@ function runAnalysis() {
         </tr>
     `;
 
-   // --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS ---
-// --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS (VERTICAL STACK) ---
+    // --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS ---
+    // --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS (VERTICAL STACK) ---
     // --- UPDATED BY USE CASE TAB: VERTICAL STACKED VIEW ---
     // --- UPDATED BY USE CASE TAB: VERTICAL STACKED DATA-HEAVY VIEW ---
- // --- UPDATED BY USE CASE TAB: VERTICAL STACKED WITH SHIFT COLUMN ---
+    // --- UPDATED BY USE CASE TAB: VERTICAL STACKED WITH SHIFT COLUMN ---
     const ucListCont = document.getElementById('uc-list-container');
     const ucValidation = document.getElementById('ucValidation');
 
@@ -609,7 +615,7 @@ function runAnalysis() {
         let unableUCs = [];
         let runningSupply = netGlobalSupplyHrs;
         let rowsHtml = '';
-        
+
         const ucRows = document.querySelectorAll('.uc-row');
 
         ucRows.forEach((row) => {
@@ -681,7 +687,7 @@ function runAnalysis() {
 
         // --- RENDER VERTICAL STACK ---
         ucListCont.className = "col-span-full flex flex-col gap-6 w-full";
-        
+
         ucListCont.innerHTML = `
             <div class="w-full p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-sm">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -750,7 +756,7 @@ function runAnalysis() {
             let bBasis = (state.shiftMode === 'percent') ? (dailyInput * (val / 100)) : val;
             let bHrs = isHoursMode ? bBasis : (bBasis / tpt);
             let finalHrs = bHrs * (1 + (bufferVal / 100));
-            
+
             // MATH UPDATE: Round up to whole person per shift
             let bCWs = Math.ceil(finalHrs / (shiftLen || 8));
 
@@ -830,15 +836,30 @@ function runAnalysis() {
         `;
     }
     // --- SCOREBOARD ---
-    document.getElementById('scoreboard').innerHTML = [
+    // --- NEW DYNAMIC SCOREBOARD ---
+    const scoreboardData = [
         { label: 'Daily Demand', val: baseDailyHrs.toFixed(1) + ' HRS' },
         { label: 'Daily Supply', val: netGlobalSupplyHrs.toFixed(1) + ' HRS' },
-        { label: 'Daily Variance', val: (variance >= 0 ? '+' : '') + variance.toFixed(1) },
-        { label: 'Target Month', val: Math.round(baseDailyHrs * 22).toLocaleString() }
-    ].map(c => `<div class="bg-white p-6 rounded-[2rem] border shadow-sm"><p class="text-[10px] font-black text-slate-400 uppercase italic mb-1 tracking-widest">${c.label}</p><h3 class="text-xl font-black italic mt-1 tracking-tighter">${c.val}</h3></div>`).join('');
+        {
+            label: variance >= 0 ? 'Daily Excess' : 'Daily Deficit',
+            val: Math.abs(variance).toFixed(1) + ' HRS', // Math.abs removes the "-" sign
+            color: variance >= 0 ? 'text-emerald-600' : 'text-red-500'
+        },
+        { label: 'Target Month', val: Math.round(totalMonthHrs).toLocaleString() + ' HRS' }
+    ];
 
-    lucide.createIcons();
-}
+    document.getElementById('scoreboard').innerHTML = scoreboardData.map(c => `
+            <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                <p class="text-[10px] font-black text-slate-400 uppercase italic mb-1 tracking-widest">
+                    ${c.label}
+                </p>
+                <h3 class="text-xl font-black italic mt-1 tracking-tighter ${c.color || 'text-slate-900'}">
+                    ${c.val}
+                </h3>
+            </div>
+        `).join('');
+            lucide.createIcons();
+        }
 
 function getStrictWeeks(y, m) {
     let weeks = []; let cur = new Date(y, m, 1); let last = new Date(y, m + 1, 0);
