@@ -188,6 +188,21 @@ label {
     box-shadow: var(--shadow-md);
 }
 
+/* This ensures the table headers don't disappear behind the header of your app */
+#view-blocks thead th {
+    position: -webkit-sticky; /* Support for Safari */
+    position: sticky;
+    top: 0;
+    background-color: #f8fafc; /* Force solid background */
+    z-index: 10;
+}
+
+/* Fixes an issue where borders disappear on sticky elements */
+#view-blocks table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
 @keyframes slideInUp {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
