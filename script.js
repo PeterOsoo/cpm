@@ -800,14 +800,15 @@ function runAnalysis() {
                
             </div>
 
-            <div class="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
-                <table class="w-full text-left">
+            <div class="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-visible">
+                <div class="overflow-y-auto custom-scrollbar" style="max-height: 600px; position: relative;">
+                    <table class="w-full text-left border-separate border-spacing-0">
                     <thead>
-                        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b bg-slate-50/50">
-                            <th class="px-10 py-4 italic">Shift Block</th>
-                            ${!isHoursMode ? `<th class="text-center italic">Basis</th>` : ''}
-                            <th class="text-center italic">Hours</th>
-                            <th class="text-right px-10 italic">Headcount</th>
+                        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50">
+                            <th class="sticky top-0 z-20 px-10 py-4 italic bg-slate-50 border-b border-slate-100">Shift Block</th>
+                            ${!isHoursMode ? `<th class="sticky top-0 z-20 text-center italic bg-slate-50 border-b border-slate-100">Basis</th>` : ''}
+                            <th class="sticky top-0 z-20 text-center italic bg-slate-50 border-b border-slate-100">Hours</th>
+                            <th class="sticky top-0 z-20 text-right px-10 italic bg-slate-50 border-b border-slate-100">Headcount</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
