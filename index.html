@@ -16,7 +16,14 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
-        /* Great for numbers */
+        /* Custom Scrollbar for the internal dashboard view */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
     </style>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -28,7 +35,7 @@
 
     <div class="max-w-[1600px] mx-auto space-y-6">
         <header
-            class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-200 flex flex-col lg:flex-row justify-between items-center gap-6 text-center lg:text-left">
+            class="sticky top-0 z-50 bg-white/80 backdrop-blur-md p-6 rounded-[2.5rem] shadow-sm border border-slate-200 flex flex-col lg:flex-row justify-between items-center gap-6 text-center lg:text-left">
             <div class="flex items-center gap-5">
                 <div class="p-5 bg-blue-600 rounded-3xl shadow-xl shadow-blue-100">
                     <i data-lucide="zap" class="text-white w-8 h-8"></i>
@@ -50,7 +57,7 @@
 
         <div id="scoreboard" class="grid grid-cols-1 md:grid-cols-4 gap-4"></div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <aside class="lg:col-span-4 space-y-4">
                 <div class="bg-white rounded-[1.5rem] shadow-sm border overflow-hidden">
                     <div onclick="toggleAcc('basics')"
@@ -216,7 +223,7 @@
             </aside>
 
             <main
-                class="lg:col-span-8 bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+                class="lg:col-span-8 sticky top-28 bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                 <div class="flex border-b border-slate-100 bg-slate-50/30 overflow-x-auto">
                     <button onclick="switchTab('weekly')" id="tab-weekly" class="tab-btn active border-b-2">Availability
                         Timeline</button>
@@ -225,7 +232,7 @@
                     <button onclick="switchTab('blocks')" id="tab-blocks" class="tab-btn">Block Dist</button>
                 </div>
 
-                <div class="p-8 flex-1 overflow-y-auto">
+                <div class="p-8 overflow-y-auto custom-scrollbar" style="max-height: calc(100vh - 280px);">
                     <div id="view-weekly" class="tab-view">
                         <table class="w-full text-left">
                             <thead class="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b">
@@ -304,12 +311,7 @@
             </main>
         </div>
     </div>
-    <!-- <script src="config.js"></script>
-<script src="ui.js"></script>
-<script src="engine.js"></script> -->
     <script src="script.js"></script>
 </body>
 
 </html>
-
-<!-- test  -->
