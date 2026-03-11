@@ -140,6 +140,8 @@ function setMode(m) {
     renderUCs();    // Updates the Use Case columns (3 vs 4 columns)
     syncAll();      // Re-runs all the math for the dashboard
 }
+
+
 function setShiftMode(m) {
     const target = parseFloat(document.getElementById('dailyInput').value) || 1;
     const inputs = document.querySelectorAll('.shift-input');
@@ -217,7 +219,7 @@ function validateRoster() {
     summaryList.innerHTML = `
         <div class="flex justify-between items-center text-[10px] font-black uppercase"><span class="text-slate-400 tracking-widest">Headcount Alignment:</span><span>${sumHC} / ${targetHC} CWs</span></div>
         <div class="flex justify-between items-center text-[10px] font-black uppercase border-t pt-2"><span class="text-slate-400 tracking-widest">Daily Target:</span><span class="text-blue-600">${dailyTargetHrs.toFixed(1)} HRS</span></div>
-        <div class="flex justify-between items-center text-[10px] font-black uppercase"><span class="text-slate-400 tracking-widest">Net Available:</span><span class="text-emerald-600">${netHrsAvailable.toFixed(1)} HRS</span></div>
+        <div class="flex justify-between items-center text-[10px] font-black uppercase"><span class="text-slate-400 tracking-widest">Expected Fulfillment:</span><span class="text-emerald-600">${netHrsAvailable.toFixed(1)} HRS</span></div>
         <div class="flex justify-between items-center text-[10px] font-black uppercase border-t pt-2">
             <span class="text-slate-400 tracking-widest">${diff >= 0 ? 'Surplus' : 'Deficit'}:</span>
             <span class="${diff >= 0 ? 'text-emerald-600' : 'text-red-500'} font-black">${Math.abs(diff).toFixed(1)} HRS</span>
@@ -831,7 +833,7 @@ function runAnalysis() {
     // --- SCOREBOARD ---
     document.getElementById('scoreboard').innerHTML = [
         { label: 'Daily Demand', val: baseDailyHrs.toFixed(1) + ' HRS' },
-        { label: 'Daily Supply', val: netGlobalSupplyHrs.toFixed(1) + ' HRS' },
+        { label: 'Expected Fulfillment', val: netGlobalSupplyHrs.toFixed(1) + ' HRS' },
         { label: 'Daily Variance', val: (variance >= 0 ? '+' : '') + variance.toFixed(1) },
         { label: 'Target Month', val: Math.round(baseDailyHrs * 22).toLocaleString() }
     ].map(c => `<div class="bg-white p-6 rounded-[2rem] border shadow-sm"><p class="text-[10px] font-black text-slate-400 uppercase italic mb-1 tracking-widest">${c.label}</p><h3 class="text-xl font-black italic mt-1 tracking-tighter">${c.val}</h3></div>`).join('');
