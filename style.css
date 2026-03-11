@@ -26,6 +26,20 @@ body {
     background-color: var(--slate-50);
     color: var(--slate-900);
     -webkit-font-smoothing: antialiased;
+    /* This ensures only the columns scroll, not the background */
+    overflow-x: hidden; 
+}
+
+/* Custom Scrollbar for a premium look */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--slate-200);
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 h1, h2, h3, h4, .font-black {
@@ -87,6 +101,8 @@ input[type=number]::-webkit-outer-spin-button {
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0;
     transform: translateY(-8px);
+    position: relative;
+    z-index: 1;
 }
 
 .accordion-content.open {
@@ -172,6 +188,21 @@ label {
     box-shadow: var(--shadow-md);
 }
 
+/* This ensures the table headers don't disappear behind the header of your app */
+#view-blocks thead th {
+    position: -webkit-sticky; /* Support for Safari */
+    position: sticky;
+    top: 0;
+    background-color: #f8fafc; /* Force solid background */
+    z-index: 10;
+}
+
+/* Fixes an issue where borders disappear on sticky elements */
+#view-blocks table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
 @keyframes slideInUp {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -179,4 +210,17 @@ label {
 
 .animate-in {
   animation: slideInUp 0.4s ease-out forwards;
+}
+
+/* Ensure the sticky dashboard internal content is scrollable */
+.tab-view-container {
+    max-height: calc(100vh - 300px); /* Adjusts based on your header/scoreboard height */
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+/* Make sure the main card doesn't jitter when sticking */
+main.sticky {
+    transition: top 0.3s ease;
+    z-index: 10;
 }

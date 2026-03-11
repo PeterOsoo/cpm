@@ -426,10 +426,16 @@ function runAnalysis() {
 
                 // Subtract Regional Holidays if "Work Holidays" is NO
                 let isHoliday = !state.workHolidays && state.selectedCountries.some(code =>
-                    state.allHolidays[code]?.includes(d.dateStr)
+                    state.allHolidays[code]?.some(h => h.date === d.dateStr)
                 );
 
-                if (isActive && !isHoliday) netWeekDays++;
+                if (isActive && !isHoliday) {
+                    netWeekDays++;
+                    // Apply the intensity slider to weekends (Sat=6, Sun=0)
+                    let isWeekend = (d.dayNum === 0 || d.dayNum === 6);
+                    let weight = isWeekend ? state.intensity : 1;
+                    totalMonthHrs += (baseDailyHrs * weight); // This builds the real monthly total
+                }
             });
 
             // Math: Base Daily Need vs. What is available in the Roster
@@ -453,8 +459,27 @@ function runAnalysis() {
 
         // Update the strategy header with the monthly totals
         if (strategyText) {
-            strategyText.innerText = `Strategic Roadmap: Total Monthly demand is ${Math.round(totalMonthHrs)} HRS across ${totalWorkDays} net working days.`;
-        }
+        strategyText.innerHTML = `
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <h4 class="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">Strategic Roadmap</h4>
+                    <p class="text-sm font-black italic text-white uppercase tracking-tight">
+                        Monthly Operational Requirement
+                    </p>
+                </div>
+                <div class="flex gap-6">
+                    <div class="bg-slate-800/50 px-4 py-2 rounded-2xl border border-slate-700">
+                        <span class="block text-[8px] font-black text-blue-400 uppercase tracking-widest">Total Demand</span>
+                        <span class="text-lg font-black text-white font-mono">${Math.round(totalMonthHrs).toLocaleString()} <span class="text-[10px] text-slate-400">HRS</span></span>
+                    </div>
+                    <div class="bg-slate-800/50 px-4 py-2 rounded-2xl border border-slate-700">
+                        <span class="block text-[8px] font-black text-emerald-400 uppercase tracking-widest">Working Window</span>
+                        <span class="text-lg font-black text-white font-mono">${totalWorkDays} <span class="text-[10px] text-slate-400">DAYS</span></span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
     }
 
     // --- STYLED HOLIDAY RISK ASSESSMENT ---
@@ -472,38 +497,50 @@ function runAnalysis() {
     });
 
     if (holidayRiskBox) {
-        if (monthHolidays.length > 0) {
-            // Sort holidays by date
-            monthHolidays.sort((a, b) => a.date.localeCompare(b.date));
+    const monthPadded = (targetMonth + 1).toString().padStart(2, '0');
+    let groupedHolidays = {};
 
-            holidayRiskBox.innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                    ${monthHolidays.map(h => `
-                        <div class="flex items-center justify-between bg-slate-800/50 p-3 rounded-2xl border border-slate-700 group hover:border-amber-500/50 transition-all">
-                            <div class="flex items-center gap-4">
-                                <div class="flex flex-col items-center justify-center bg-slate-900 h-10 w-10 rounded-xl border border-slate-700 shadow-inner">
-                                    <span class="text-[8px] font-black text-amber-500 leading-none uppercase">${MONTHS[targetMonth].substring(0, 3)}</span>
-                                    <span class="text-sm font-black text-white leading-none mt-0.5">${h.date.split('-')[2]}</span>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] font-black text-slate-100 uppercase tracking-tight line-clamp-1">${h.name}</p>
-                                    <p class="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-0.5">Territory: ${h.country}</p>
-                                </div>
-                            </div>
-                            <div class="bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20">
-                                <span class="text-[8px] font-black text-amber-500 uppercase italic">Impact High</span>
-                            </div>
-                        </div>
-                    `).join('')}
+    state.selectedCountries.forEach(code => {
+        const hols = state.allHolidays[code] || [];
+        hols.forEach(h => {
+            if (h.date.startsWith(`2026-${monthPadded}`)) {
+                if (!groupedHolidays[h.date]) {
+                    groupedHolidays[h.date] = { name: h.name, territories: [] };
+                }
+                if (!groupedHolidays[h.date].territories.includes(code)) {
+                    groupedHolidays[h.date].territories.push(code);
+                }
+            }
+        });
+    });
+
+    const sortedDates = Object.keys(groupedHolidays).sort();
+
+    if (sortedDates.length > 0) {
+        holidayRiskBox.innerHTML = sortedDates.map(date => {
+            const h = groupedHolidays[date];
+            const day = date.split('-')[2];
+            const monthName = MONTHS[targetMonth].substring(0, 3);
+            
+            // Just raw text: Date -- Holiday Name -- Countries
+            return `
+                <div class="grid grid-cols-12 gap-4 py-4 items-center">
+                    <div class="col-span-2 font-mono font-black text-blue-600 text-xs">
+                        ${day} ${monthName}
+                    </div>
+                    <div class="col-span-7 font-black uppercase text-[10px] text-slate-700 italic">
+                        ${h.name}
+                    </div>
+                    <div class="col-span-3 text-right font-black text-[10px] text-emerald-600 uppercase tracking-tighter">
+                        ${h.territories.join(' • ')}
+                    </div>
                 </div>
             `;
-        } else {
-            holidayRiskBox.innerHTML = `
-                <div class="py-4 text-center">
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">No regional holidays detected for ${MONTHS[targetMonth]} 2026</p>
-                </div>`;
-        }
+        }).join('');
+    } else {
+        holidayRiskBox.innerHTML = `<p class="text-[10px] font-black text-slate-300 uppercase italic">No regional overlaps found.</p>`;
     }
+}
 
     // --- ROUND-ROBIN DISTRIBUTION LOGIC ---
     const tableBody = document.getElementById('tableBody');
@@ -528,7 +565,7 @@ function runAnalysis() {
         }
     }
 
-   // --- RENDER TABLE ROWS ---
+    // --- RENDER TABLE ROWS ---
     let totalHC = 0;
     let totalSupply = 0;
     let totalAdjCount = 0;
@@ -537,7 +574,7 @@ function runAnalysis() {
         const hrsVal = parseFloat(row.querySelector('.roster-hrs-val').value) || 0;
         const hcVal = parseFloat(row.querySelector('.roster-hc-val').value) || 0;
         const blockSupply = (hrsVal * hcVal) * (1 - forfeit);
-        
+
         // Accumulate totals
         totalHC += hcVal;
         totalSupply += blockSupply;
@@ -597,11 +634,11 @@ function runAnalysis() {
         </tr>
     `;
 
-   // --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS ---
-// --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS (VERTICAL STACK) ---
+    // --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS ---
+    // --- UPDATED BY USE CASE TAB: CAPABILITY ANALYSIS (VERTICAL STACK) ---
     // --- UPDATED BY USE CASE TAB: VERTICAL STACKED VIEW ---
     // --- UPDATED BY USE CASE TAB: VERTICAL STACKED DATA-HEAVY VIEW ---
- // --- UPDATED BY USE CASE TAB: VERTICAL STACKED WITH SHIFT COLUMN ---
+    // --- UPDATED BY USE CASE TAB: VERTICAL STACKED WITH SHIFT COLUMN ---
     const ucListCont = document.getElementById('uc-list-container');
     const ucValidation = document.getElementById('ucValidation');
 
@@ -611,7 +648,7 @@ function runAnalysis() {
         let unableUCs = [];
         let runningSupply = netGlobalSupplyHrs;
         let rowsHtml = '';
-        
+
         const ucRows = document.querySelectorAll('.uc-row');
 
         ucRows.forEach((row) => {
@@ -683,7 +720,7 @@ function runAnalysis() {
 
         // --- RENDER VERTICAL STACK ---
         ucListCont.className = "col-span-full flex flex-col gap-6 w-full";
-        
+
         ucListCont.innerHTML = `
             <div class="w-full p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 shadow-sm">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -752,7 +789,7 @@ function runAnalysis() {
             let bBasis = (state.shiftMode === 'percent') ? (dailyInput * (val / 100)) : val;
             let bHrs = isHoursMode ? bBasis : (bBasis / tpt);
             let finalHrs = bHrs * (1 + (bufferVal / 100));
-            
+
             // MATH UPDATE: Round up to whole person per shift
             let bCWs = Math.ceil(finalHrs / (shiftLen || 8));
 
@@ -802,14 +839,15 @@ function runAnalysis() {
                
             </div>
 
-            <div class="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
-                <table class="w-full text-left">
+            <div class="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-visible">
+                <div class="overflow-y-auto custom-scrollbar" style="max-height: 600px; position: relative;">
+                    <table class="w-full text-left border-separate border-spacing-0">
                     <thead>
-                        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b bg-slate-50/50">
-                            <th class="px-10 py-4 italic">Shift Block</th>
-                            ${!isHoursMode ? `<th class="text-center italic">Basis</th>` : ''}
-                            <th class="text-center italic">Hours</th>
-                            <th class="text-right px-10 italic">Headcount</th>
+                        <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50">
+                            <th class="sticky top-0 z-20 px-10 py-4 italic bg-slate-50 border-b border-slate-100">Shift Block</th>
+                            ${!isHoursMode ? `<th class="sticky top-0 z-20 text-center italic bg-slate-50 border-b border-slate-100">Basis</th>` : ''}
+                            <th class="sticky top-0 z-20 text-center italic bg-slate-50 border-b border-slate-100">Hours</th>
+                            <th class="sticky top-0 z-20 text-right px-10 italic bg-slate-50 border-b border-slate-100">Headcount</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -831,15 +869,37 @@ function runAnalysis() {
         `;
     }
     // --- SCOREBOARD ---
-    document.getElementById('scoreboard').innerHTML = [
+    // --- NEW DYNAMIC SCOREBOARD ---
+    const scoreboardData = [
         { label: 'Daily Demand', val: baseDailyHrs.toFixed(1) + ' HRS' },
+<<<<<<< HEAD
         { label: 'Expected Fulfillment', val: netGlobalSupplyHrs.toFixed(1) + ' HRS' },
         { label: 'Daily Variance', val: (variance >= 0 ? '+' : '') + variance.toFixed(1) },
         { label: 'Target Month', val: Math.round(baseDailyHrs * 22).toLocaleString() }
     ].map(c => `<div class="bg-white p-6 rounded-[2rem] border shadow-sm"><p class="text-[10px] font-black text-slate-400 uppercase italic mb-1 tracking-widest">${c.label}</p><h3 class="text-xl font-black italic mt-1 tracking-tighter">${c.val}</h3></div>`).join('');
+=======
+        { label: 'Daily Supply', val: netGlobalSupplyHrs.toFixed(1) + ' HRS' },
+        {
+            label: variance >= 0 ? 'Daily Excess' : 'Daily Deficit',
+            val: Math.abs(variance).toFixed(1) + ' HRS', // Math.abs removes the "-" sign
+            color: variance >= 0 ? 'text-emerald-600' : 'text-red-500'
+        },
+        { label: 'Target Month', val: Math.round(totalMonthHrs).toLocaleString() + ' HRS' }
+    ];
+>>>>>>> 826b8f890bc8f03eda659e72be3e8e16bea40b44
 
-    lucide.createIcons();
-}
+    document.getElementById('scoreboard').innerHTML = scoreboardData.map(c => `
+            <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                <p class="text-[10px] font-black text-slate-400 uppercase italic mb-1 tracking-widest">
+                    ${c.label}
+                </p>
+                <h3 class="text-xl font-black italic mt-1 tracking-tighter ${c.color || 'text-slate-900'}">
+                    ${c.val}
+                </h3>
+            </div>
+        `).join('');
+            lucide.createIcons();
+        }
 
 function getStrictWeeks(y, m) {
     let weeks = []; let cur = new Date(y, m, 1); let last = new Date(y, m + 1, 0);
