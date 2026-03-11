@@ -49,11 +49,15 @@ async function init() {
 
 function setWorkDays(d) {
     state.workDays = d;
-    [5, 6, 7].forEach(v => document.getElementById('wd' + v).className = 'btn-toggle flex-1' + (v === d ? ' active' : ''));
+    // Updated to include 1 in the loop
+    [1, 5, 6, 7].forEach(v => {
+        const btn = document.getElementById('wd' + v);
+        if (btn) btn.className = 'btn-toggle flex-1' + (v === d ? ' active' : '');
+    });
+    // Intensity box only shows if we have weekend days (6 or 7)
     document.getElementById('intensityBox').style.display = d > 5 ? 'block' : 'none';
     runAnalysis();
 }
-
 function setHolWork(b) {
     state.workHolidays = b;
 
@@ -416,15 +420,22 @@ function runAnalysis() {
 
     if (weeklyBody) {
         weeklyBody.innerHTML = '';
-        weeks.forEach((w, i) => {
+       weeks.forEach((w, i) => {
             let netWeekDays = 0;
-            let weightedWeekDemand = 0; // Fixed: Tracks the accurate weighted hours for this week
+            let weightedWeekDemand = 0; 
 
             w.days.forEach(d => {
-                // Determine if day is active based on 5/6/7 toggle
-                let isActive = (state.workDays === 5 && d.dayNum >= 1 && d.dayNum <= 5) ||
-                               (state.workDays === 6 && d.dayNum >= 1 && d.dayNum <= 6) ||
-                               (state.workDays === 7);
+                // NEW: Logic to handle 1 working day vs 5, 6, or 7
+                let isActive = false;
+                if (state.workDays === 1) {
+                    isActive = (d.dayNum === 1); // Monday only
+                } else if (state.workDays === 5) {
+                    isActive = (d.dayNum >= 1 && d.dayNum <= 5); // Mon-Fri
+                } else if (state.workDays === 6) {
+                    isActive = (d.dayNum >= 1 && d.dayNum <= 6); // Mon-Sat
+                } else if (state.workDays === 7) {
+                    isActive = true; // All days
+                }
 
                 // Subtract Regional Holidays if "Work Holidays" is NO
                 let isHoliday = !state.workHolidays && state.selectedCountries.some(code =>
@@ -433,20 +444,17 @@ function runAnalysis() {
 
                 if (isActive && !isHoliday) {
                     netWeekDays++;
-                    // Apply the intensity slider to weekends (Sat=6, Sun=0)
+                    // Apply intensity slider (only affects Sat=6, Sun=0)
                     let isWeekend = (d.dayNum === 0 || d.dayNum === 6);
                     let weight = isWeekend ? state.intensity : 1;
                     
-                    // Add to the local week total
                     weightedWeekDemand += (baseDailyHrs * weight);
                 }
             });
 
-            // Math: Weighted Need vs. What is available in the Roster
             const weekSupply = netGlobalSupplyHrs * netWeekDays;
             const weekGap = weekSupply - weightedWeekDemand;
 
-            // Global totals
             totalMonthHrs += weightedWeekDemand; 
             totalWorkDays += netWeekDays;
 
