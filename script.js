@@ -829,7 +829,7 @@ function runAnalysis() {
                 </div>` : ''}
 
                 <div class="text-[10px] font-black text-emerald-500 italic uppercase tracking-widest font-mono leading-relaxed">
-                    Net Available: ${netGlobalSupplyHrs.toFixed(1)} HRS
+                    Expected Shift Fulfillment: ${netGlobalSupplyHrs.toFixed(1)} HRS
                 </div>
                 
                 <div class="text-[10px] font-black text-blue-500 italic uppercase tracking-widest leading-relaxed">
@@ -871,14 +871,8 @@ function runAnalysis() {
     // --- SCOREBOARD ---
     // --- NEW DYNAMIC SCOREBOARD ---
     const scoreboardData = [
-        { label: 'Daily Demand', val: baseDailyHrs.toFixed(1) + ' HRS' },
-<<<<<<< HEAD
-        { label: 'Expected Fulfillment', val: netGlobalSupplyHrs.toFixed(1) + ' HRS' },
-        { label: 'Daily Variance', val: (variance >= 0 ? '+' : '') + variance.toFixed(1) },
-        { label: 'Target Month', val: Math.round(baseDailyHrs * 22).toLocaleString() }
-    ].map(c => `<div class="bg-white p-6 rounded-[2rem] border shadow-sm"><p class="text-[10px] font-black text-slate-400 uppercase italic mb-1 tracking-widest">${c.label}</p><h3 class="text-xl font-black italic mt-1 tracking-tighter">${c.val}</h3></div>`).join('');
-=======
-        { label: 'Daily Supply', val: netGlobalSupplyHrs.toFixed(1) + ' HRS' },
+        { label: 'Daily Target', val: baseDailyHrs.toFixed(1) + ' HRS' },
+        { label: 'Expected Shift Fulfillment', val: netGlobalSupplyHrs.toFixed(1) + ' HRS' },
         {
             label: variance >= 0 ? 'Daily Excess' : 'Daily Deficit',
             val: Math.abs(variance).toFixed(1) + ' HRS', // Math.abs removes the "-" sign
@@ -886,7 +880,6 @@ function runAnalysis() {
         },
         { label: 'Target Month', val: Math.round(totalMonthHrs).toLocaleString() + ' HRS' }
     ];
->>>>>>> 826b8f890bc8f03eda659e72be3e8e16bea40b44
 
     document.getElementById('scoreboard').innerHTML = scoreboardData.map(c => `
             <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
