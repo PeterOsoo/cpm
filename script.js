@@ -408,7 +408,7 @@ function runAnalysis() {
 
     const variance = netGlobalSupplyHrs - baseDailyHrs;
 
-    // --- POPULATE TAB 3: WEEKLY ROADMAP (CALENDAR LOGIC) ---
+   // --- POPULATE TAB 3: WEEKLY ROADMAP (CALENDAR LOGIC) ---
     const weeklyBody = document.getElementById('weeklyBreakdownBody');
     const strategyText = document.getElementById('monthlyStrategyText');
     let totalMonthHrs = 0;
@@ -418,11 +418,13 @@ function runAnalysis() {
         weeklyBody.innerHTML = '';
         weeks.forEach((w, i) => {
             let netWeekDays = 0;
+            let weightedWeekDemand = 0; // Fixed: Tracks the accurate weighted hours for this week
+
             w.days.forEach(d => {
                 // Determine if day is active based on 5/6/7 toggle
                 let isActive = (state.workDays === 5 && d.dayNum >= 1 && d.dayNum <= 5) ||
-                    (state.workDays === 6 && d.dayNum >= 1 && d.dayNum <= 6) ||
-                    (state.workDays === 7);
+                               (state.workDays === 6 && d.dayNum >= 1 && d.dayNum <= 6) ||
+                               (state.workDays === 7);
 
                 // Subtract Regional Holidays if "Work Holidays" is NO
                 let isHoliday = !state.workHolidays && state.selectedCountries.some(code =>
@@ -434,23 +436,25 @@ function runAnalysis() {
                     // Apply the intensity slider to weekends (Sat=6, Sun=0)
                     let isWeekend = (d.dayNum === 0 || d.dayNum === 6);
                     let weight = isWeekend ? state.intensity : 1;
-                    totalMonthHrs += (baseDailyHrs * weight); // This builds the real monthly total
+                    
+                    // Add to the local week total
+                    weightedWeekDemand += (baseDailyHrs * weight);
                 }
             });
 
-            // Math: Base Daily Need vs. What is available in the Roster
-            const weekDemand = baseDailyHrs * netWeekDays;
+            // Math: Weighted Need vs. What is available in the Roster
             const weekSupply = netGlobalSupplyHrs * netWeekDays;
-            const weekGap = weekSupply - weekDemand;
+            const weekGap = weekSupply - weightedWeekDemand;
 
-            totalMonthHrs += weekDemand;
+            // Global totals
+            totalMonthHrs += weightedWeekDemand; 
             totalWorkDays += netWeekDays;
 
             weeklyBody.innerHTML += `
                 <tr class="hover:bg-slate-50 border-b">
                     <td class="px-10 py-6 font-black italic text-slate-700 uppercase">Week ${i + 1} (${w.label})</td>
                     <td class="px-10 py-6 text-center font-black text-slate-600 uppercase">${netWeekDays} Working Days</td>
-                    <td class="px-10 py-6 text-center font-mono font-black text-blue-600 uppercase">${Math.round(weekDemand)} HRS</td>
+                    <td class="px-10 py-6 text-center font-mono font-black text-blue-600 uppercase">${Math.round(weightedWeekDemand).toLocaleString()} HRS</td>
                     <td class="px-10 py-6 text-right font-black ${weekGap < 0 ? 'text-red-500' : 'text-emerald-600'} uppercase">
                         ${weekGap < 0 ? 'Deficit ' + Math.abs(weekGap).toFixed(0) + ' HRS' : 'Covered'}
                     </td>
@@ -459,29 +463,28 @@ function runAnalysis() {
 
         // Update the strategy header with the monthly totals
         if (strategyText) {
-        strategyText.innerHTML = `
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="space-y-1">
-                    <h4 class="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">Strategic Roadmap</h4>
-                    <p class="text-sm font-black italic text-white uppercase tracking-tight">
-                        Monthly Operational Requirement
-                    </p>
-                </div>
-                <div class="flex gap-6">
-                    <div class="bg-slate-800/50 px-4 py-2 rounded-2xl border border-slate-700">
-                        <span class="block text-[8px] font-black text-blue-400 uppercase tracking-widest">Total Demand</span>
-                        <span class="text-lg font-black text-white font-mono">${Math.round(totalMonthHrs).toLocaleString()} <span class="text-[10px] text-slate-400">HRS</span></span>
+            strategyText.innerHTML = `
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="space-y-1">
+                        <h4 class="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">Strategic Roadmap</h4>
+                        <p class="text-sm font-black italic text-white uppercase tracking-tight">
+                            Monthly Operational Requirement
+                        </p>
                     </div>
-                    <div class="bg-slate-800/50 px-4 py-2 rounded-2xl border border-slate-700">
-                        <span class="block text-[8px] font-black text-emerald-400 uppercase tracking-widest">Working Window</span>
-                        <span class="text-lg font-black text-white font-mono">${totalWorkDays} <span class="text-[10px] text-slate-400">DAYS</span></span>
+                    <div class="flex gap-6">
+                        <div class="bg-slate-800/50 px-4 py-2 rounded-2xl border border-slate-700">
+                            <span class="block text-[8px] font-black text-blue-400 uppercase tracking-widest">Total Demand</span>
+                            <span class="text-lg font-black text-white font-mono">${Math.round(totalMonthHrs).toLocaleString()} <span class="text-[10px] text-slate-400">HRS</span></span>
+                        </div>
+                        <div class="bg-slate-800/50 px-4 py-2 rounded-2xl border border-slate-700">
+                            <span class="block text-[8px] font-black text-emerald-400 uppercase tracking-widest">Working Window</span>
+                            <span class="text-lg font-black text-white font-mono">${totalWorkDays} <span class="text-[10px] text-slate-400">DAYS</span></span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
     }
-    }
-
     // --- STYLED HOLIDAY RISK ASSESSMENT ---
     const holidayRiskBox = document.getElementById('summaryHolidayRisk');
     const monthPadded = (targetMonth + 1).toString().padStart(2, '0');
